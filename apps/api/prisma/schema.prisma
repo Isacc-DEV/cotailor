@@ -1,0 +1,398 @@
+// CoTailor data model (design Section 17). PostgreSQL + Prisma.
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters", "queryCompiler"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SessionState {
+  CREATED
+  JD_SUBMITTED
+  ANALYZING
+  CATEGORY_REJECTED
+  WAITING_CATEGORY_CONFIRMATION
+  WAITING_SUBTYPE_CONFIRMATION
+  WAITING_SKILL_DECISIONS
+  STRATEGY_REVIEW
+  GENERATING
+  VALIDATING
+  NEEDS_REVISION
+  FINAL_READY
+  REVISING
+  CANCELLED
+  EXPIRED
+}
+
+enum SkillPriority {
+  required
+  preferred
+}
+
+enum MatchType {
+  exact
+  equivalent
+  similar_stack
+  same_family
+  missing
+  blocked_sensitive
+}
+
+enum RiskLevel {
+  none
+  low
+  medium
+  high
+  critical
+}
+
+enum CardType {
+  category_mismatch
+  category_low_confidence
+  subtype_mismatch
+  knockout_requirement
+  missing_required_skill
+  similar_skill
+  certification_risk
+  resume_style
+  strategy_approval
+}
+
+enum CardSeverity {
+  info
+  warning
+  blocking
+  critical
+}
+
+enum CardStatus {
+  pending
+  answered
+  auto_resolved
+  expired
+}
+
+enum Provenance {
+  profile_verified
+  user_confirmed
+  omitted
+}
+
+enum ResumeStyle {
+  ats_strong
+  recruiter_friendly
+  balanced
+}
+
+enum CreatedBy {
+  ai_generation
+  ai_revision
+  user_edit
+}
+
+enum ScreeningOutlook {
+  likely_pass
+  borderline
+  unlikely
+}
+
+enum ExportFormat {
+  docx
+  pdf
+  txt
+}
+
+enum CategoryRelationKind {
+  same
+  adjacent
+  distinct
+}
+
+model User {
+  id           String             @id @default(cuid())
+  email        String             @unique
+  passwordHash String?
+  createdAt    DateTime           @default(now())
+  profiles     Profile[]
+  sessions     TailoringSession[]
+  auditLogs    AuditLog[]
+}
+
+model Profile {
+  id                String                 @id @default(cuid())
+  userId            String
+  user              User                   @relation(fields: [userId], references: [id])
+  name              String
+  category          String
+  baseResume        Json
+  domainTags        String[]
+  workAuthorization String?
+  deletedAt         DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  subtypes          ProfileSubtype[]
+  skills            ProfileSkill[]
+  certifications    ProfileCertification[]
+  sessions          TailoringSession[]
+  decisionMemory    DecisionMemory[]
+
+  @@index([userId])
+}
+
+model ProfileSubtype {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name      String
+
+  @@index([profileId])
+}
+
+model ProfileSkill {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name      String
+  years     Int?
+
+  @@index([profileId])
+}
+
+model ProfileCertification {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name      String
+  issuer    String?
+
+  @@index([profileId])
+}
+
+model JdDocument {
+  id          String             @id @default(cuid())
+  userId      String?
+  contentHash String             @unique
+  text        String
+  source      String             @default("paste")
+  createdAt   DateTime           @default(now())
+  sessions    TailoringSession[]
+  analyses    JdAnalysis[]
+}
+
+model TailoringSession {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id])
+  profileId       String
+  profile         Profile          @relation(fields: [profileId], references: [id])
+  jdDocumentId    String?
+  jdDocument      JdDocument?      @relation(fields: [jdDocumentId], references: [id])
+  state           SessionState     @default(CREATED)
+  profileSnapshot Json?
+  activeVersionId String?
+  revisionCount   Int              @default(0)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  expiresAt       DateTime?
+  analyses        JdAnalysis[]
+  skillMatches    SkillMatch[]
+  cards           DecisionCard[]
+  decisions       UserDecision[]
+  strategies      ResumeStrategy[]
+  resume          GeneratedResume?
+  versions        ResumeVersion[]
+  chatMessages    ChatMessage[]
+  auditLogs       AuditLog[]
+
+  @@index([userId])
+  @@index([state])
+}
+
+model JdAnalysis {
+  id                 String       @id @default(cuid())
+  sessionId          String
+  session            TailoringSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  jdDocumentId       String
+  jdDocument         JdDocument   @relation(fields: [jdDocumentId], references: [id])
+  category           String
+  categoryConfidence Float
+  subtype            String
+  subtypeConfidence  Float
+  domainKeywords     String[]
+  summary            String
+  raw                Json
+  promptVersion      String?
+  modelUsed          String?
+  createdAt          DateTime     @default(now())
+  skillMatches       SkillMatch[]
+
+  @@index([sessionId])
+}
+
+model SkillMatch {
+  id                String        @id @default(cuid())
+  sessionId         String
+  session           TailoringSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  jdAnalysisId      String
+  jdAnalysis        JdAnalysis    @relation(fields: [jdAnalysisId], references: [id], onDelete: Cascade)
+  jdSkill           String
+  priority          SkillPriority
+  matchType         MatchType
+  profileMatch      String?
+  similarity        Float?
+  riskLevel         RiskLevel
+  recommendedAction String
+  needsUserDecision Boolean
+  evidenceQuote     String
+  createdAt         DateTime      @default(now())
+
+  @@index([sessionId])
+}
+
+model DecisionCard {
+  id                 String         @id @default(cuid())
+  sessionId          String
+  session            TailoringSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  cardType           CardType
+  severity           CardSeverity
+  status             CardStatus     @default(pending)
+  payload            Json
+  autoResolvedOption String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  decisions          UserDecision[]
+
+  @@index([sessionId])
+}
+
+model UserDecision {
+  id                 String       @id @default(cuid())
+  cardId             String
+  card               DecisionCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  sessionId          String
+  session            TailoringSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  optionId           String
+  note               String?
+  resolvedProvenance Provenance?
+  createdAt          DateTime     @default(now())
+
+  @@index([sessionId])
+  @@index([cardId])
+}
+
+model ResumeStrategy {
+  id                  String      @id @default(cuid())
+  sessionId           String
+  session             TailoringSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  payload             Json
+  style               ResumeStyle @default(balanced)
+  predictedMatchScore Int
+  approved            Boolean     @default(false)
+  promptVersion       String?
+  modelUsed           String?
+  createdAt           DateTime    @default(now())
+
+  @@index([sessionId])
+}
+
+model GeneratedResume {
+  id              String           @id @default(cuid())
+  sessionId       String           @unique
+  session         TailoringSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  activeVersionId String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model ResumeVersion {
+  id               String            @id @default(cuid())
+  sessionId        String
+  session          TailoringSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  versionNo        Int
+  contentJson      Json
+  createdBy        CreatedBy
+  matchScore       Int?
+  atsScore         Int?
+  recruiterScore   Int?
+  riskLevel        RiskLevel?
+  screeningOutlook ScreeningOutlook?
+  validation       Json?
+  createdAt        DateTime          @default(now())
+  exports          ExportFile[]
+
+  @@unique([sessionId, versionNo])
+  @@index([sessionId])
+}
+
+model ExportFile {
+  id         String        @id @default(cuid())
+  versionId  String
+  version    ResumeVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  format     ExportFormat
+  storageKey String
+  status     String        @default("processing")
+  createdAt  DateTime      @default(now())
+  expiresAt  DateTime?
+
+  @@index([versionId])
+}
+
+model ChatMessage {
+  id        String           @id @default(cuid())
+  sessionId String
+  session   TailoringSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String
+  content   String
+  createdAt DateTime         @default(now())
+
+  @@index([sessionId])
+}
+
+model AuditLog {
+  id        String            @id @default(cuid())
+  sessionId String?
+  session   TailoringSession? @relation(fields: [sessionId], references: [id])
+  userId    String?
+  user      User?             @relation(fields: [userId], references: [id])
+  eventType String
+  fromState SessionState?
+  toState   SessionState?
+  payload   Json?
+  createdAt DateTime          @default(now())
+
+  @@index([sessionId])
+}
+
+// ---- Premium / config tables ----
+model SkillTaxonomy {
+  id           String   @id @default(cuid())
+  skill        String   @unique
+  family       String
+  aliases      String[]
+  earliestYear Int?
+  sensitive    Boolean  @default(false)
+}
+
+model CategoryRelation {
+  id        String               @id @default(cuid())
+  categoryA String
+  categoryB String
+  relation  CategoryRelationKind
+
+  @@unique([categoryA, categoryB])
+}
+
+model DecisionMemory {
+  id         String     @id @default(cuid())
+  profileId  String
+  profile    Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  jdSkill    String
+  optionId   String
+  provenance Provenance
+  createdAt  DateTime   @default(now())
+
+  @@index([profileId])
+}

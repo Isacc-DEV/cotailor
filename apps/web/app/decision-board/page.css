@@ -1,0 +1,161 @@
+.decision-board {
+  max-width: 800px;
+  margin: 0;
+  padding: 1.5rem 1rem;
+  width: 100%;
+}
+
+.board-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.board-header h1 {
+  font-size: 1.875rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.board-header p {
+  color: var(--text-tertiary);
+  font-size: 0.95rem;
+}
+
+.error-message {
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #fca5a5;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Assumed Defaults Section */
+.assumed-defaults {
+  background: var(--bg-secondary);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.assumed-defaults h2 {
+  margin-top: 0;
+  font-size: 1.125rem;
+  color: var(--accent);
+  margin-bottom: 0.25rem;
+}
+
+.defaults-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.defaults-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.default-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  background: var(--card-bg);
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+}
+
+.default-question {
+  margin: 0;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.default-consequence {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Board Content */
+.board-content {
+  margin-bottom: 2rem;
+}
+
+.board-content h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.cards-subtitle {
+  color: var(--text-tertiary);
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+/* All Answered State */
+.all-answered {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--bg-secondary);
+  border-radius: 0.5rem;
+}
+
+.success-icon {
+  font-size: 3rem;
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+
+.all-answered h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.all-answered p {
+  color: var(--text-tertiary);
+  margin-bottom: 1.5rem;
+}
+
+.all-answered button {
+  min-width: 200px;
+}
+
+/* Board Footer */
+.board-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.board-footer button {
+  min-width: 200px;
+}
+
+@media (max-width: 768px) {
+  .decision-board {
+    padding: 1rem;
+  }
+
+  .board-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .board-footer {
+    flex-direction: column-reverse;
+  }
+
+  .board-footer button {
+    width: 100%;
+  }
+}
+

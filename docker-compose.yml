@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: cotailor-postgres
+    environment:
+      POSTGRES_USER: cotailor
+      POSTGRES_PASSWORD: cotailor
+      POSTGRES_DB: cotailor
+    ports:
+      - "5432:5432"
+    volumes:
+      - cotailor_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cotailor"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: cotailor-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - cotailor_redis:/data
+
+volumes:
+  cotailor_pg:
+  cotailor_redis:

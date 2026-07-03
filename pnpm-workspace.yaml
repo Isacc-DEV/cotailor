@@ -1,0 +1,21 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# pnpm 11 runs an install check before every `pnpm run`; skip it so scripts work
+# even though the native build scripts below are gated (Prisma fetches its own engine).
+verifyDepsBeforeRun: false
+
+onlyBuiltDependencies:
+  - "@prisma/client"
+  - "@prisma/engines"
+  - "prisma"
+  - "@nestjs/core"
+  - "sharp"
+
+allowBuilds:
+  '@nestjs/core': set this to true or false
+  '@prisma/client': set this to true or false
+  '@prisma/engines': set this to true or false
+  prisma: set this to true or false
+  sharp: set this to true or false

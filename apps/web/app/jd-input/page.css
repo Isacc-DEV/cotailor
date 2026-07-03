@@ -1,0 +1,181 @@
+.jd-input-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--bg-primary);
+}
+
+.jd-input-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+}
+
+.jd-input-header {
+  margin-bottom: 24px;
+}
+
+.jd-input-header h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  color: var(--text-primary);
+  letter-spacing: -0.4px;
+}
+
+.jd-input-header p {
+  font-size: 1rem;
+  color: var(--text-tertiary);
+  margin: 0;
+  font-weight: 400;
+}
+
+.jd-input-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.jd-input-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.jd-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  resize: vertical;
+  transition: all 0.15s ease;
+}
+
+.jd-textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+.jd-textarea:hover {
+  border-color: var(--border-dark);
+}
+
+.jd-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.jd-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--bg-tertiary);
+}
+
+.jd-char-count {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  margin-top: 8px;
+  text-align: right;
+}
+
+.error-message {
+  background-color: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 6px;
+  padding: 12px;
+  color: #fca5a5;
+  font-weight: 500;
+  font-size: 0.875rem;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.jd-input-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.jd-help {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.jd-help p {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.jd-help ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.jd-help li {
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jd-help li:before {
+  content: '•';
+  color: var(--text-secondary);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .jd-input-main {
+    padding: 24px;
+  }
+
+  .jd-input-header {
+    margin-bottom: 16px;
+  }
+
+  .jd-input-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .jd-textarea {
+    font-size: 16px;
+  }
+
+  .jd-input-actions {
+    flex-direction: column-reverse;
+    gap: 6px;
+  }
+
+  .jd-input-actions button {
+    width: 100%;
+  }
+}

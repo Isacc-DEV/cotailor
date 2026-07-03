@@ -1,0 +1,20 @@
+{
+  "name": "cotailor",
+  "version": "0.0.0",
+  "private": true,
+  "description": "CoTailor — collaborative AI resume tailoring agent (monorepo)",
+  "packageManager": "pnpm@11.9.0",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build:shared": "pnpm --filter @cotailor/shared run build",
+    "build:api": "pnpm --filter @cotailor/api run build",
+    "build:web": "pnpm --filter @cotailor/web run build",
+    "build": "pnpm run build:shared && pnpm run build:api && pnpm run build:web",
+    "dev": "pnpm run build:shared && pnpm --parallel --filter @cotailor/api --filter @cotailor/web run dev",
+    "typecheck": "pnpm run build:shared && pnpm --filter @cotailor/api run typecheck && pnpm --filter @cotailor/web run typecheck",
+    "prisma:generate": "pnpm --filter @cotailor/api run prisma:generate",
+    "prisma:migrate": "pnpm --filter @cotailor/api run prisma:migrate",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down"
+  }
+}

@@ -1,0 +1,239 @@
+.category-rejected {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  padding: 1.5rem 1rem;
+}
+
+.rejected-container {
+  max-width: 700px;
+  background: var(--card-bg);
+  border-radius: 1rem;
+  padding: 2rem 1.5rem;
+  box-shadow: var(--shadow-lg);
+  margin: 0;
+  width: 100%;
+}
+
+.rejected-icon {
+  font-size: 3.5rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.rejected-container h1 {
+  font-size: 1.875rem;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 2rem;
+  font-weight: 700;
+}
+
+.mismatch-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border-radius: 0.75rem;
+  justify-content: center;
+}
+
+.mismatch-card {
+  flex: 1;
+  text-align: center;
+  padding: 1rem;
+  background: var(--card-bg);
+  border-radius: 0.5rem;
+  border: 2px solid var(--border-color);
+}
+
+.mismatch-card.rejected-badge {
+  border-color: rgba(220, 38, 38, 0.5);
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.mismatch-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.mismatch-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.mismatch-card.rejected-badge .mismatch-value {
+  color: #fca5a5;
+}
+
+.mismatch-arrow {
+  font-size: 1.5rem;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.confidence-info {
+  background: rgba(96, 165, 250, 0.05);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.confidence-info p {
+  color: var(--accent);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.confidence-info strong {
+  font-weight: 700;
+  color: var(--accent-hover);
+}
+
+.explanation {
+  margin-bottom: 2rem;
+}
+
+.explanation h2 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.explanation p {
+  color: var(--text-tertiary);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.explanation ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.explanation li {
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+  position: relative;
+  line-height: 1.6;
+}
+
+.explanation li:before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: #fca5a5;
+  font-weight: bold;
+}
+
+.next-steps {
+  margin-bottom: 2rem;
+}
+
+.next-steps h2 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+}
+
+.option-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.option {
+  background: var(--bg-secondary);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.option-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.option h3 {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+}
+
+.option p {
+  color: var(--text-tertiary);
+  font-size: 0.95rem;
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+}
+
+.pro-tip {
+  background: rgba(96, 165, 250, 0.05);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-left: 4px solid var(--accent);
+  padding: 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.pro-tip strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .category-rejected {
+    padding: 1rem;
+  }
+
+  .rejected-container {
+    padding: 1.5rem 1rem;
+  }
+
+  .rejected-icon {
+    font-size: 2.5rem;
+  }
+
+  .rejected-container h1 {
+    font-size: 1.5rem;
+  }
+
+  .mismatch-info {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .mismatch-arrow {
+    transform: rotate(90deg);
+  }
+
+  .option-group {
+    grid-template-columns: 1fr;
+  }
+}
