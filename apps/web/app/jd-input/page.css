@@ -9,27 +9,29 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  max-width: 100%;
-  margin: 0;
+  max-width: 900px;
+  margin: 0 auto;
   width: 100%;
-  padding: 24px;
+  padding: 40px 32px;
+  gap: 24px;
 }
 
 .jd-input-header {
-  margin-bottom: 24px;
+  text-align: center;
+  margin-bottom: 8px;
 }
 
 .jd-input-header h1 {
-  font-size: 1.875rem;
+  font-size: 2.25rem;
   font-weight: 700;
-  margin: 0 0 6px 0;
+  margin: 0 0 8px 0;
   color: var(--text-primary);
-  letter-spacing: -0.4px;
+  letter-spacing: -0.5px;
 }
 
 .jd-input-header p {
-  font-size: 1rem;
-  color: var(--text-tertiary);
+  font-size: 1.05rem;
+  color: var(--text-secondary);
   margin: 0;
   font-weight: 400;
 }
@@ -37,7 +39,7 @@
 .jd-input-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .jd-input-group {
@@ -48,16 +50,17 @@
 
 .jd-textarea {
   width: 100%;
-  padding: 12px;
+  padding: 16px;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  line-height: 1.6;
-  background-color: var(--bg-primary);
+  border-radius: 12px;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  line-height: 1.8;
+  background-color: var(--card-bg);
   color: var(--text-primary);
   resize: vertical;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  min-height: 320px;
 }
 
 .jd-textarea::placeholder {
@@ -65,17 +68,19 @@
 }
 
 .jd-textarea:hover {
-  border-color: var(--border-dark);
+  border-color: var(--border-light);
+  background-color: var(--card-hover-bg);
 }
 
 .jd-textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.15);
+  background-color: var(--card-bg);
 }
 
 .jd-textarea:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
   background-color: var(--bg-tertiary);
 }
@@ -88,13 +93,13 @@
 }
 
 .error-message {
-  background-color: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  border-radius: 6px;
-  padding: 12px;
-  color: #fca5a5;
+  background: linear-gradient(135deg, rgba(214, 69, 69, 0.1) 0%, rgba(220, 53, 69, 0.05) 100%);
+  border: 1px solid rgba(214, 69, 69, 0.3);
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: #f78989;
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   animation: slideIn 0.2s ease-out;
 }
 
@@ -111,24 +116,25 @@
 
 .jd-input-actions {
   display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 8px;
 }
 
 .jd-help {
-  background-color: var(--bg-tertiary);
+  background: linear-gradient(135deg, rgba(26, 27, 38, 0.8) 0%, rgba(16, 163, 127, 0.05) 100%);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 12px;
+  border-radius: 12px;
+  padding: 16px;
 }
 
 .jd-help p {
-  margin: 0 0 8px 0;
+  margin: 0 0 12px 0;
   font-weight: 600;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
+  color: var(--accent);
+  font-size: 0.85rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 .jd-help ul {
@@ -138,41 +144,48 @@
 }
 
 .jd-help li {
-  color: var(--text-tertiary);
-  margin-bottom: 4px;
-  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  font-size: 0.85rem;
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.4;
 }
 
 .jd-help li:before {
-  content: '•';
-  color: var(--text-secondary);
+  content: '✓';
+  color: var(--accent);
   font-weight: 700;
   flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (max-width: 768px) {
   .jd-input-main {
-    padding: 24px;
+    padding: 24px 16px;
   }
 
   .jd-input-header {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
   .jd-input-header h1 {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
   }
 
   .jd-textarea {
     font-size: 16px;
+    min-height: 240px;
   }
 
   .jd-input-actions {
-    flex-direction: column-reverse;
-    gap: 6px;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .jd-input-actions button {

@@ -1,158 +1,138 @@
 .decision-card {
-  background: #f5f5f4;
-  border: 1px solid #e7e5e4;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  transition: all 0.2s;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .decision-card-info {
-  border-left: 4px solid #0c4a6e;
+  border-left: 4px solid var(--info);
 }
 
 .decision-card-warning {
-  border-left: 4px solid #92400e;
+  border-left: 4px solid #f5a623;
 }
 
 .decision-card-blocking {
-  border-left: 4px solid #7f1d1d;
+  border-left: 4px solid #d64545;
 }
 
 .decision-card-critical {
-  border-left: 4px solid #7f1d1d;
-  background: #fef2f2;
+  border-left: 4px solid #d64545;
+  background: linear-gradient(135deg, rgba(214, 69, 69, 0.05) 0%, rgba(214, 69, 69, 0.02) 100%);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 1rem;
-  gap: 1rem;
+  margin-bottom: 16px;
+  gap: 12px;
 }
 
 .card-title-group {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 10px;
   flex-wrap: wrap;
   flex: 1;
 }
 
 .card-title {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: #1c1c1c;
+  color: var(--text-primary);
 }
 
 .answered-checkmark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: #dcfce7;
-  color: #166534;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+  color: white;
   border-radius: 50%;
   font-weight: 700;
   flex-shrink: 0;
+  font-size: 0.95rem;
 }
 
 .card-options {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 10px;
 }
 
 .option-label {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border-radius: 0.375rem;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
   user-select: none;
+  border: 1px solid transparent;
+  background: var(--card-hover-bg);
 }
 
 .option-label:hover {
-  background: #ebe8e7;
+  background: rgba(16, 163, 127, 0.08);
+  border-color: rgba(16, 163, 127, 0.2);
 }
 
 .option-label:has(input:checked) {
-  background: #e0f2fe;
+  background: linear-gradient(135deg, rgba(16, 163, 127, 0.15) 0%, rgba(25, 195, 125, 0.1) 100%);
+  border-color: var(--accent);
 }
 
 .option-input {
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-top: 0.125rem;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
   cursor: pointer;
-  accent-color: #059669;
+  accent-color: var(--accent);
   flex-shrink: 0;
 }
 
 .option-input:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .option-content {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 4px;
   flex: 1;
 }
 
 .option-name {
   font-weight: 500;
-  color: #1c1c1c;
+  color: var(--text-primary);
+  font-size: 0.95rem;
 }
 
 .option-description {
-  font-size: 0.875rem;
-  color: #78716f;
-}
-
-@media (prefers-color-scheme: dark) {
-  .decision-card {
-    background: #27251f;
-    border-color: #44403c;
-  }
-
-  .decision-card-critical {
-    background: #5f1d1d;
-  }
-
-  .card-title {
-    color: #f5f5f4;
-  }
-
-  .option-label:hover {
-    background: #44403c;
-  }
-
-  .option-label:has(input:checked) {
-    background: #1e3a8a;
-  }
-
-  .option-name {
-    color: #f5f5f4;
-  }
-
-  .option-description {
-    color: #a8a39d;
-  }
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
 }
 
 @media (max-width: 768px) {
   .decision-card {
-    padding: 1rem;
+    padding: 16px;
   }
 
   .card-title {
     font-size: 1rem;
+  }
+
+  .option-label {
+    padding: 10px;
   }
 }

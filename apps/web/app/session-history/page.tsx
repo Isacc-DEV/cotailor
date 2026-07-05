@@ -3,10 +3,14 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Button, Badge, Spinner, Card } from '@/app/components/ui';
+import { routeForState } from '@/app/lib/session-routes';
 import './page.css';
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 interface Session {
   id: string;
+  state: string;
   profileName: string;
   jobTitle: string;
   company?: string;
@@ -15,6 +19,14 @@ interface Session {
   matchScore?: number;
   decisionsMade?: number;
   totalDecisions?: number;
+}
+
+const ABANDONED_STATES = new Set(['CANCELLED', 'EXPIRED', 'CATEGORY_REJECTED']);
+
+function statusOf(state: string): Session['status'] {
+  if (state === 'FINAL_READY') return 'completed';
+  if (ABANDONED_STATES.has(state)) return 'abandoned';
+  return 'in_progress';
 }
 
 export default function SessionHistory() {
@@ -27,51 +39,26 @@ export default function SessionHistory() {
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        // Mock data - replace with actual API call
-        setSessions([
-          {
-            id: 'sess_001',
-            profileName: 'Senior Backend Engineer',
-            jobTitle: 'Full Stack Engineer',
-            company: 'TechCorp',
-            createdAt: '2024-12-15T14:30:00Z',
-            status: 'completed',
-            matchScore: 87,
-            decisionsMade: 10,
-            totalDecisions: 10,
-          },
-          {
-            id: 'sess_002',
-            profileName: 'Senior Backend Engineer',
-            jobTitle: 'Principal Engineer',
-            company: 'StartupXYZ',
-            createdAt: '2024-12-14T10:15:00Z',
-            status: 'completed',
-            matchScore: 72,
-            decisionsMade: 10,
-            totalDecisions: 10,
-          },
-          {
-            id: 'sess_003',
-            profileName: 'Product Manager',
-            jobTitle: 'Product Manager',
-            company: 'BigTech',
-            createdAt: '2024-12-13T16:45:00Z',
-            status: 'in_progress',
-            decisionsMade: 6,
-            totalDecisions: 10,
-          },
-          {
-            id: 'sess_004',
-            profileName: 'Senior Backend Engineer',
-            jobTitle: 'DevOps Engineer',
-            company: 'CloudServices',
-            createdAt: '2024-12-12T09:00:00Z',
-            status: 'abandoned',
-          },
-        ]);
+        const res = await fetch(`${API}/sessions`);
+        if (!res.ok) throw new Error(`Failed to load sessions (${res.status})`);
+        const data = await res.json();
+        setSessions(
+          (Array.isArray(data) ? data : []).map((s: any) => ({
+            id: s.id,
+            state: s.state,
+            profileName: s.profile?.name || 'Profile',
+            jobTitle:
+              s.jobTitle ||
+              s.jdDocument?.text?.split('\n')[0]?.trim().slice(0, 60) ||
+              'No job description yet',
+            createdAt: s.createdAt,
+            status: statusOf(s.state),
+            decisionsMade: s.cardsAnswered,
+            totalDecisions: s.cardsTotal,
+          })),
+        );
       } catch (err) {
-        setError('Failed to load session history');
+        setError(err instanceof Error ? err.message : 'Failed to load session history');
       } finally {
         setLoading(false);
       }
@@ -127,11 +114,11 @@ export default function SessionHistory() {
     return date.toLocaleDateString();
   };
 
-  const handleResumeSession = (sessionId: string, status: Session['status']) => {
-    if (status === 'completed') {
-      router.push(`/resume-preview?sessionId=${sessionId}`);
-    } else if (status === 'in_progress') {
-      router.push(`/decision-board?sessionId=${sessionId}`);
+  const handleResumeSession = (session: Session) => {
+    if (session.status === 'completed') {
+      router.push(`/resume-preview?sessionId=${session.id}`);
+    } else if (session.status === 'in_progress') {
+      router.push(routeForState(session.state, session.id));
     }
   };
 
@@ -230,7 +217,7 @@ export default function SessionHistory() {
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => handleResumeSession(session.id, session.status)}
+                      onClick={() => handleResumeSession(session)}
                     >
                       View Resume
                     </Button>
@@ -242,7 +229,7 @@ export default function SessionHistory() {
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => handleResumeSession(session.id, session.status)}
+                    onClick={() => handleResumeSession(session)}
                   >
                     Continue
                   </Button>

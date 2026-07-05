@@ -55,7 +55,9 @@ export function useProfiles(): UseProfilesReturn {
   const updateProfile = async (id: string, data: Partial<Profile>) => {
     setError(null);
     try {
-      const updated = await api.profiles.update(id, data);
+      // Remove id and other non-updatable fields before sending
+      const { id: _, createdAt, updatedAt, ...updateData } = data as any;
+      const updated = await api.profiles.update(id, updateData);
       setProfiles((prev) => prev.map((p) => (p.id === id ? updated : p)));
       return updated;
     } catch (err) {

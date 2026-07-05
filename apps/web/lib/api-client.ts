@@ -46,11 +46,15 @@ async function request<T>(
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({
-        message: response.statusText,
-        code: response.status,
-      }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorBody = await response.json();
+        if (errorBody?.message) errorMessage = errorBody.message;
+        if (errorBody?.error?.message) errorMessage = errorBody.error.message;
+      } catch {
+        // Response had no JSON body; keep the status-based message.
+      }
+      throw new Error(errorMessage);
     }
 
     const data: any = await response.json();

@@ -7,7 +7,7 @@ import type {
   ResumeContent,
   ResumeValidation,
 } from '@cotailor/shared';
-import type { LLMProvider } from './llm-provider.interface';
+import type { BulletRewriteInput, LLMProvider, SummaryInput } from './llm-provider.interface';
 
 const CIVIL = /\b(civil|structural|geotechnical|surveying|construction|mechanical engineering)\b/i;
 
@@ -155,5 +155,48 @@ export class StubLlmProvider implements LLMProvider {
 
   async reviseResume(): Promise<ResumeContent> {
     return this.generateResume();
+  }
+
+  // Deterministic placeholder wording. Real, natural phrasing arrives when the
+  // Claude provider implements this same method (Approach 2 seam).
+  async rewriteBullet(input: BulletRewriteInput): Promise<{ text: string }> {
+    const { bullet, skill, mode, relatedSkill } = input;
+    const strip = (t: string) => t.replace(/\s*\.\s*$/, '');
+
+    // Style fixes need a real LLM; the stub returns the bullet unchanged.
+    if (mode === 'style') {
+      return { text: bullet };
+    }
+
+    if (mode === 'add' || !bullet.trim()) {
+      return { text: `Applied ${skill} to build and ship production features.` };
+    }
+
+    if (relatedSkill) {
+      const re = new RegExp(relatedSkill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      if (mode === 'exchange') {
+        return {
+          text: re.test(bullet) ? bullet.replace(re, skill) : `${strip(bullet)}, using ${skill}.`,
+        };
+      }
+      // both
+      return {
+        text: re.test(bullet)
+          ? bullet.replace(re, `${relatedSkill} and ${skill}`)
+          : `${strip(bullet)} with ${relatedSkill} and ${skill}.`,
+      };
+    }
+
+    return { text: `${strip(bullet)}, including ${skill}.` };
+  }
+
+  // Deterministic summary from the final content; real phrasing needs Gemini.
+  async writeSummary(input: SummaryInput): Promise<{ text: string }> {
+    const role = input.targetRole ?? 'Engineer';
+    const top = input.skills.slice(0, 4).join(', ');
+    const years = input.experiences.length;
+    return {
+      text: `${role} with hands-on experience across ${years} role${years === 1 ? '' : 's'}, working with ${top}. Focused on building reliable, production-grade systems.`,
+    };
   }
 }

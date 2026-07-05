@@ -51,52 +51,59 @@ export default function JDInput() {
     setLoading(true);
 
     try {
-      let currentSessionId = sessionId;
+      const API = 'http://localhost:3001/api/v1';
 
-      // If no session, create one
-      if (!currentSessionId) {
-        const profileRes = await fetch('http://localhost:3001/api/v1/profiles', {
-          headers: { 'Content-Type': 'application/json' },
-        });
+      // Figure out which profile to use. If we arrived with an existing session,
+      // reuse its profile (and reuse the session only if it's still fresh).
+      let profileId: string | null = null;
+      let reusableSessionId: string | null = null;
 
-        if (!profileRes.ok) {
-          throw new Error('No profiles found. Please create a profile first.');
+      if (sessionId) {
+        const sRes = await fetch(`${API}/sessions/${sessionId}`);
+        if (sRes.ok) {
+          const s = await sRes.json();
+          profileId = s.profileId ?? null;
+          // A session can only accept a JD while in CREATED; otherwise start fresh.
+          if (s.state === 'CREATED') reusableSessionId = s.id;
         }
+      }
 
+      // Fall back to the first profile if we don't have one yet.
+      if (!profileId) {
+        const profileRes = await fetch(`${API}/profiles`);
+        if (!profileRes.ok) throw new Error('No profiles found. Please create a profile first.');
         const profiles = await profileRes.json();
-        if (profiles.length === 0) {
-          throw new Error('No profiles found. Please create a profile first.');
-        }
+        if (!profiles.length) throw new Error('No profiles found. Please create a profile first.');
+        profileId = profiles[0].id;
+      }
 
-        const sessionRes = await fetch('http://localhost:3001/api/v1/sessions', {
+      // Reuse the fresh session, or create a new one.
+      let currentSessionId = reusableSessionId;
+      if (!currentSessionId) {
+        const sessionRes = await fetch(`${API}/sessions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ profile_id: profiles[0].id }),
+          body: JSON.stringify({ profile_id: profileId }),
         });
-
-        if (!sessionRes.ok) {
-          throw new Error('Failed to create session');
-        }
-
+        if (!sessionRes.ok) throw new Error('Failed to create session');
         const newSession = await sessionRes.json();
         currentSessionId = newSession.id || newSession.data?.id;
       }
 
+      if (!currentSessionId) throw new Error('Could not start a session');
+
       // Submit JD
-      const response = await fetch(
-        `http://localhost:3001/api/v1/sessions/${currentSessionId}/jd`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: jdText }),
-        }
-      );
+      const response = await fetch(`${API}/sessions/${currentSessionId}/jd`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: jdText }),
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to analyze job description');
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || `Failed to analyze job description (${response.status})`);
       }
 
-      // Navigate to decision board
       router.push(`/decision-board?sessionId=${currentSessionId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');

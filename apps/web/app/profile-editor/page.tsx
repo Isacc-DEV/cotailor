@@ -4,6 +4,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useProfiles } from '@/app/hooks/useProfiles';
 import { Button, Spinner } from '@/app/components/ui';
+import { exportProfile, importProfile, copyProfileToClipboard, pasteProfileFromClipboard } from '@/app/lib/profile-export';
+import WorkExperienceSection from '@/app/components/profile/WorkExperienceSection';
+import EducationSection from '@/app/components/profile/EducationSection';
+import CertificationsSection from '@/app/components/profile/CertificationsSection';
 import './page.css';
 
 interface Profile {
@@ -22,22 +26,37 @@ interface Profile {
   };
   workExperience?: Array<{
     company: string;
-    title?: string;
+    position: string;
     startDate?: string;
-    endDate?: string;
+    endDate?: string | null;
+    location?: string;
     description?: string;
+    bullets?: string[];
+    technologies?: string[];
+    impact?: string;
   }>;
   education?: Array<{
-    university: string;
-    degree?: string;
-    field?: string;
-    graduationYear?: string;
+    institution: string;
+    degree: string;
+    field: string;
+    graduationYear: number | string;
+    gpa?: string;
+    honors?: string;
+    relevantCoursework?: string[];
   }>;
   skills?: string[];
+  topSkills?: Array<{
+    name: string;
+    years?: number;
+    proficiency?: string;
+  }>;
   certifications?: Array<{
     name: string;
     issuer?: string;
-    year?: string;
+    issueDate?: string;
+    expiryDate?: string;
+    credentialId?: string;
+    credentialUrl?: string;
   }>;
 }
 
@@ -67,6 +86,67 @@ const SUBTYPES: Record<string, string[]> = {
   'Human Resources': ['Recruiter', 'HRBP', 'Compensation', 'Learning'],
 };
 
+/**
+ * Normalize skills from any imported JSON shape into a flat string[].
+ * Recursively descends so it handles:
+ *  - string[]                                   -> ["Node.js", "React"]
+ *  - {name}[] / {skill}[] / {label}[]           -> [{name:"Node.js"}] -> ["Node.js"]
+ *  - categorized object                         -> {languages:["JS"]} -> ["JS"]
+ *  - categorized object with items arrays       -> {backend:{category,items:[{name}]}} -> ["Node.js", ...]
+ *  - comma-separated string                     -> "Node.js, React" -> ["Node.js","React"]
+ */
+function normalizeSkills(raw: any): string[] {
+  if (!raw) return [];
+
+  if (typeof raw === 'string') {
+    return raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+
+  const out: string[] = [];
+
+  const visit = (node: any) => {
+    if (!node) return;
+
+    if (typeof node === 'string') {
+      const s = node.trim();
+      if (s) out.push(s);
+      return;
+    }
+
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+
+    if (typeof node === 'object') {
+      // Leaf skill object: take its name and stop descending.
+      const leaf = node.name ?? node.skill ?? node.label;
+      if (typeof leaf === 'string') {
+        const s = leaf.trim();
+        if (s) out.push(s);
+        return;
+      }
+      // Category object with an items array: descend only into items
+      // (skip sibling fields like "category" so labels aren't treated as skills).
+      if (Array.isArray(node.items)) {
+        node.items.forEach(visit);
+        return;
+      }
+      // Generic object: descend into all values.
+      Object.values(node).forEach(visit);
+      return;
+    }
+  };
+
+  visit(raw);
+
+  // De-duplicate while preserving order.
+  return Array.from(new Set(out));
+}
+
 export default function ProfileEditor() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -80,20 +160,197 @@ export default function ProfileEditor() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string[] | null>(null);
+  const [undoStack, setUndoStack] = useState<Partial<Profile>[]>([]);
 
   useEffect(() => {
     if (profileId && profiles.length > 0) {
-      const found = profiles.find((p) => p.id === profileId);
+      const found = profiles.find((p) => p.id === profileId) as any;
       if (found) {
-        setProfile(found as Profile);
-        setFormData(found as Profile);
+        // The DB stores resume content inside baseResume JSON, and skills/subtypes
+        // as relations. Map that shape back into the flat form structure.
+        const br = (found.baseResume && typeof found.baseResume === 'object' ? found.baseResume : {}) as any;
+        const skills =
+          Array.isArray(found.skills) && found.skills.length > 0
+            ? normalizeSkills(found.skills)
+            : normalizeSkills(br.skills);
+        const subtype =
+          Array.isArray(found.subtypes) && found.subtypes.length > 0
+            ? found.subtypes[0].name
+            : br.subtype;
+
+        const mapped: Partial<Profile> = {
+          id: found.id,
+          name: found.name,
+          category: found.category,
+          subtype,
+          resumeStyle: br.resumeStyle,
+          header: br.header || {},
+          workExperience: br.workExperience || [],
+          education: br.education || [],
+          skills,
+          topSkills: Array.isArray(br.topSkills) ? br.topSkills : [],
+          certifications: br.certifications || [],
+        };
+
+        setProfile(mapped as Profile);
+        setFormData(mapped);
       }
     }
   }, [profileId, profiles]);
 
+  // Undo/Recovery Functions
+  const saveToUndoStack = () => {
+    setUndoStack((prev) => {
+      const newStack = [...prev, JSON.parse(JSON.stringify(formData))];
+      // Keep only last 2 states
+      if (newStack.length > 2) {
+        newStack.shift();
+      }
+      return newStack;
+    });
+  };
+
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+
+    const lastState = undoStack[undoStack.length - 1];
+    setFormData(JSON.parse(JSON.stringify(lastState)));
+    setUndoStack((prev) => prev.slice(0, -1));
+  };
+
+  // Keyboard listener for Ctrl+Z — must be registered before any early return
+  // so hook order stays stable across renders.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undoStack, formData]);
+
   if (loadingProfiles || !profile) {
     return <Spinner text="Loading profile..." />;
   }
+
+  // Export profile as JSON
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      exportProfile(formData);
+      alert('Profile exported successfully!');
+    } catch (err) {
+      alert(`Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Copy profile to clipboard
+  const handleCopyToClipboard = async () => {
+    try {
+      const success = await copyProfileToClipboard(formData);
+      if (success) {
+        alert('Profile copied to clipboard!');
+      } else {
+        alert('Failed to copy to clipboard');
+      }
+    } catch (err) {
+      alert(`Copy failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
+  // Import profile from file
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const result = await importProfile(file);
+      if (result.success && result.data) {
+        const prof = result.data.profile as any;
+
+        // Map fields from imported JSON to form structure
+        const skillsArray = normalizeSkills(prof.skills ?? prof.baseResume?.skills);
+
+        const importedData: Partial<Profile> = {
+          name: prof.name,
+          category: prof.category,
+          subtype: prof.subtype || (Array.isArray(prof.subtypes) ? prof.subtypes[0] : undefined),
+          resumeStyle: prof.resumeStyle,
+          header: prof.header || {},
+          workExperience: prof.workExperience || prof.baseResume?.workExperience || [],
+          education: prof.education || prof.baseResume?.education || [],
+          skills: skillsArray,
+          topSkills: Array.isArray(prof.topSkills)
+            ? prof.topSkills
+            : Array.isArray(prof.baseResume?.topSkills)
+              ? prof.baseResume.topSkills
+              : [],
+          certifications: prof.certifications || prof.baseResume?.certifications || [],
+        };
+
+        setFormData(importedData);
+        setImportError(null);
+        alert('Profile imported successfully! Review and save your changes.');
+      } else {
+        setImportError(result.errors || []);
+      }
+    } catch (err) {
+      setImportError([err instanceof Error ? err.message : 'Unknown error']);
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  };
+
+  // Paste profile from clipboard
+  const handlePasteFromClipboard = async () => {
+    setImporting(true);
+    try {
+      const result = await pasteProfileFromClipboard();
+      if (result.success && result.data) {
+        const prof = result.data.profile as any;
+
+        // Map fields from imported JSON to form structure
+        const skillsArray = normalizeSkills(prof.skills ?? prof.baseResume?.skills);
+
+        const importedData: Partial<Profile> = {
+          name: prof.name,
+          category: prof.category,
+          subtype: prof.subtype || (Array.isArray(prof.subtypes) ? prof.subtypes[0] : undefined),
+          resumeStyle: prof.resumeStyle,
+          header: prof.header || {},
+          workExperience: prof.workExperience || prof.baseResume?.workExperience || [],
+          education: prof.education || prof.baseResume?.education || [],
+          skills: skillsArray,
+          topSkills: Array.isArray(prof.topSkills)
+            ? prof.topSkills
+            : Array.isArray(prof.baseResume?.topSkills)
+              ? prof.baseResume.topSkills
+              : [],
+          certifications: prof.certifications || prof.baseResume?.certifications || [],
+        };
+
+        setFormData(importedData);
+        setImportError(null);
+        alert('Profile pasted successfully! Review and save your changes.');
+      } else {
+        setImportError(result.errors || []);
+      }
+    } catch (err) {
+      setImportError([err instanceof Error ? err.message : 'Unknown error']);
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -106,6 +363,10 @@ export default function ProfileEditor() {
     }
     if (!formData.header?.name?.trim()) {
       errors.headerName = 'Your name is required';
+    }
+    const linkedin = formData.header?.linkedin?.trim();
+    if (linkedin && !linkedin.toLowerCase().includes('linkedin.com/in')) {
+      errors.headerLinkedin = 'LinkedIn must contain "linkedin.com/in"';
     }
 
     setValidationErrors(errors);
@@ -121,6 +382,7 @@ export default function ProfileEditor() {
 
     try {
       await updateProfile(profileId!, formData as Profile);
+      setUndoStack([]);  // Clear undo stack after successful save
       setSuccess(true);
       setTimeout(() => {
         router.push('/profile-selector');
@@ -192,11 +454,73 @@ export default function ProfileEditor() {
   return (
     <div className="profile-editor">
       <div className="editor-header">
-        <Button variant="secondary" onClick={() => router.push('/profile-selector')}>
-          ← Back to Profiles
-        </Button>
-        <h1>Edit Profile</h1>
+        <div className="header-left">
+          <Button variant="secondary" onClick={() => router.push('/profile-selector')}>
+            ← Back to Profiles
+          </Button>
+          <h1>Edit Profile</h1>
+        </div>
+
+        <div className="header-actions">
+          <button
+            className="export-import-btn export-btn"
+            onClick={handleExport}
+            disabled={exporting}
+            title="Download profile as JSON"
+          >
+            ⬇️ {exporting ? 'Exporting...' : 'Export'}
+          </button>
+
+          <button
+            className="export-import-btn copy-btn"
+            onClick={handleCopyToClipboard}
+            title="Copy profile JSON to clipboard"
+          >
+            📋 Copy
+          </button>
+
+          <label className="export-import-btn import-btn">
+            📤 {importing ? 'Importing...' : 'Import'}
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImportFile}
+              disabled={importing}
+              style={{ display: 'none' }}
+            />
+          </label>
+
+          <button
+            className="export-import-btn paste-btn"
+            onClick={handlePasteFromClipboard}
+            disabled={importing}
+            title="Paste profile JSON from clipboard"
+          >
+            📌 {importing ? 'Pasting...' : 'Paste'}
+          </button>
+        </div>
       </div>
+
+      {/* Import Error Modal */}
+      {importError && (
+        <div className="import-error-overlay" onClick={() => setImportError(null)}>
+          <div className="import-error-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Import Error</h2>
+            <p>The profile JSON could not be imported. Please check the file and try again.</p>
+            <ul className="error-list">
+              {importError.map((err, idx) => (
+                <li key={idx}>• {err}</li>
+              ))}
+            </ul>
+            <button
+              className="btn-primary"
+              onClick={() => setImportError(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && <div className="error-message">{error}</div>}
 
@@ -343,14 +667,18 @@ export default function ProfileEditor() {
             <div className="form-group">
               <label htmlFor="headerLinkedin">LinkedIn</label>
               <input
-                type="url"
+                type="text"
                 id="headerLinkedin"
                 name="headerLinkedin"
-                placeholder="https://linkedin.com/in/yourprofile"
+                placeholder="linkedin.com/in/yourprofile"
                 value={formData.header?.linkedin || ''}
                 onChange={(e) => handleInputChange(e, 'header.linkedin')}
+                className={validationErrors.headerLinkedin ? 'error' : ''}
                 disabled={loading}
               />
+              {validationErrors.headerLinkedin && (
+                <span className="error-text">{validationErrors.headerLinkedin}</span>
+              )}
             </div>
 
             <div className="form-group">
@@ -369,54 +697,24 @@ export default function ProfileEditor() {
         </section>
 
         {/* Section 3: Work Experience */}
-        <section className="form-section">
-          <h2 className="section-title">Work Experience</h2>
-          <div className="form-group">
-            <label htmlFor="workExperience">Companies</label>
-            <p className="field-help">Enter work experience in JSON format</p>
-            <textarea
-              id="workExperience"
-              name="workExperience"
-              value={JSON.stringify(formData.workExperience || [], null, 2)}
-              onChange={(e) => {
-                try {
-                  const parsed = JSON.parse(e.target.value);
-                  setFormData((prev) => ({ ...prev, workExperience: parsed }));
-                } catch {
-                  // Invalid JSON, ignore
-                }
-              }}
-              placeholder={JSON.stringify([{ company: 'Company Name', title: 'Job Title', startDate: '2020-01', endDate: '2023-12', description: 'Description' }], null, 2)}
-              disabled={loading}
-              rows={6}
-            />
-          </div>
-        </section>
+        <WorkExperienceSection
+          experiences={formData.workExperience || []}
+          onChange={(experiences) =>
+            setFormData((prev) => ({ ...prev, workExperience: experiences }))
+          }
+          disabled={loading}
+          onDelete={saveToUndoStack}
+        />
 
         {/* Section 4: Education */}
-        <section className="form-section">
-          <h2 className="section-title">Education</h2>
-          <div className="form-group">
-            <label htmlFor="education">Universities</label>
-            <p className="field-help">Enter education in JSON format</p>
-            <textarea
-              id="education"
-              name="education"
-              value={JSON.stringify(formData.education || [], null, 2)}
-              onChange={(e) => {
-                try {
-                  const parsed = JSON.parse(e.target.value);
-                  setFormData((prev) => ({ ...prev, education: parsed }));
-                } catch {
-                  // Invalid JSON, ignore
-                }
-              }}
-              placeholder={JSON.stringify([{ university: 'University Name', degree: 'BS', field: 'Computer Science', graduationYear: '2020' }], null, 2)}
-              disabled={loading}
-              rows={6}
-            />
-          </div>
-        </section>
+        <EducationSection
+          education={formData.education || []}
+          onChange={(education) =>
+            setFormData((prev) => ({ ...prev, education }))
+          }
+          disabled={loading}
+          onDelete={saveToUndoStack}
+        />
 
         {/* Section 5: Skills */}
         <section className="form-section">
@@ -427,7 +725,7 @@ export default function ProfileEditor() {
             <textarea
               id="skills"
               name="skills"
-              value={(formData.skills || []).join(', ')}
+              value={Array.isArray(formData.skills) ? formData.skills.join(', ') : typeof formData.skills === 'string' ? formData.skills : ''}
               onChange={handleInputChange}
               placeholder="e.g., Node.js, PostgreSQL, React, AWS, Docker, TypeScript"
               disabled={loading}
@@ -437,29 +735,14 @@ export default function ProfileEditor() {
         </section>
 
         {/* Section 6: Certifications */}
-        <section className="form-section">
-          <h2 className="section-title">Certifications</h2>
-          <div className="form-group">
-            <label htmlFor="certifications">Certifications</label>
-            <p className="field-help">Enter certifications in JSON format</p>
-            <textarea
-              id="certifications"
-              name="certifications"
-              value={JSON.stringify(formData.certifications || [], null, 2)}
-              onChange={(e) => {
-                try {
-                  const parsed = JSON.parse(e.target.value);
-                  setFormData((prev) => ({ ...prev, certifications: parsed }));
-                } catch {
-                  // Invalid JSON, ignore
-                }
-              }}
-              placeholder={JSON.stringify([{ name: 'Certification Name', issuer: 'Issuer', year: '2023' }], null, 2)}
-              disabled={loading}
-              rows={5}
-            />
-          </div>
-        </section>
+        <CertificationsSection
+          certifications={formData.certifications || []}
+          onChange={(certifications) =>
+            setFormData((prev) => ({ ...prev, certifications }))
+          }
+          disabled={loading}
+          onDelete={saveToUndoStack}
+        />
 
         {/* Form Actions */}
         <div className="form-actions">

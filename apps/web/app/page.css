@@ -5,74 +5,76 @@
 
 /* Hero Section */
 .hero {
-  background-color: var(--bg-primary);
-  padding: 32px 24px;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, #0a0b11 100%);
+  padding: 60px 24px;
   text-align: center;
   border-bottom: 1px solid var(--border-color);
 }
 
 .hero-content {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
 .hero-badge {
   display: inline-block;
-  background-color: var(--bg-secondary);
-  color: var(--text-tertiary);
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 0.8rem;
+  background: linear-gradient(135deg, rgba(16, 163, 127, 0.1) 0%, rgba(16, 163, 127, 0.05) 100%);
+  color: var(--accent);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(16, 163, 127, 0.2);
 }
 
 .hero h1 {
-  font-size: 2.25rem;
-  margin: 0 0 12px;
+  font-size: 3rem;
+  margin: 0 0 16px;
   color: var(--text-primary);
   font-weight: 700;
   line-height: 1.2;
+  letter-spacing: -0.5px;
 }
 
 .hero-subtitle {
-  font-size: 1.1rem;
-  color: var(--text-secondary);
+  font-size: 1.2rem;
+  color: var(--accent);
   margin: 0 0 12px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .hero-description {
-  font-size: 0.95rem;
-  color: var(--text-tertiary);
-  margin: 0 0 24px;
-  line-height: 1.6;
-  max-width: 65ch;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin: 0 0 32px;
+  line-height: 1.7;
+  max-width: 70ch;
   margin-left: auto;
   margin-right: auto;
 }
 
 .hero-actions {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 24px;
+  margin-bottom: 48px;
 }
 
 .hero-actions button {
-  min-width: 180px;
+  min-width: 220px;
 }
 
 .hero-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  max-width: 500px;
+  gap: 32px;
+  max-width: 600px;
   margin: 0 auto;
-  padding-top: 24px;
+  padding-top: 32px;
   border-top: 1px solid var(--border-color);
 }
 
@@ -81,211 +83,231 @@
 }
 
 .stat-number {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
   color: var(--accent);
+  line-height: 1;
 }
 
 .stat-label {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--text-tertiary);
-  margin-top: 6px;
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Features Section */
 .features {
   max-width: 100%;
   margin: 0;
-  padding: 32px 24px;
+  padding: 60px 24px;
   border-bottom: 1px solid var(--border-color);
 }
 
 .features h2 {
-  font-size: 1.875rem;
+  font-size: 2.25rem;
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 48px;
   color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .feature-card {
-  background: var(--bg-secondary);
-  padding: 16px;
-  border-radius: 6px;
+  background: var(--card-bg);
+  padding: 24px;
+  border-radius: 12px;
   border: 1px solid var(--border-color);
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 }
 
 .feature-card:hover {
   border-color: var(--accent);
+  background: var(--card-hover-bg);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(16, 163, 127, 0.15);
 }
 
 .feature-icon {
-  font-size: 1.5rem;
-  margin-bottom: 8px;
+  font-size: 2rem;
+  margin-bottom: 12px;
 }
 
 .feature-card h3 {
-  font-size: 1rem;
-  margin-bottom: 6px;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
   color: var(--text-primary);
   font-weight: 600;
 }
 
 .feature-card p {
   color: var(--text-tertiary);
-  line-height: 1.5;
+  line-height: 1.6;
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
 /* How It Works Section */
 .how-it-works {
-  background: var(--bg-primary);
-  padding: 32px 24px;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, #0a0b11 100%);
+  padding: 60px 24px;
   border-bottom: 1px solid var(--border-color);
 }
 
 .how-it-works h2 {
-  font-size: 1.875rem;
+  font-size: 2.25rem;
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 48px;
   color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .steps {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .step {
   text-align: center;
-  background: var(--bg-secondary);
-  padding: 16px;
-  border-radius: 6px;
+  background: var(--card-bg);
+  padding: 24px;
+  border-radius: 12px;
   border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.step:hover {
+  border-color: var(--accent);
+  background: var(--card-hover-bg);
 }
 
 .step-number {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: var(--accent);
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
   color: white;
   border-radius: 50%;
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .step h3 {
-  font-size: 0.95rem;
-  margin-bottom: 6px;
+  font-size: 1rem;
+  margin-bottom: 8px;
   color: var(--text-primary);
   font-weight: 600;
 }
 
 .step p {
-  color: var(--text-tertiary);
-  line-height: 1.5;
+  color: var(--text-secondary);
+  line-height: 1.6;
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
 /* CTA Section */
 .cta {
-  background: var(--bg-secondary);
+  background: linear-gradient(135deg, rgba(16, 163, 127, 0.1) 0%, rgba(16, 163, 127, 0.05) 100%);
   color: var(--text-primary);
-  padding: 32px 24px;
+  padding: 48px 24px;
   text-align: center;
-  border-bottom: 1px solid var(--border-color);
+  border: 1px solid var(--border-color);
+  border-bottom: none;
 }
 
 .cta h2 {
-  font-size: 1.5rem;
-  margin-bottom: 8px;
+  font-size: 2rem;
+  margin-bottom: 12px;
   color: var(--text-primary);
   font-weight: 700;
+  letter-spacing: -0.3px;
 }
 
 .cta p {
-  font-size: 0.95rem;
-  margin-bottom: 16px;
-  color: var(--text-tertiary);
+  font-size: 1rem;
+  margin-bottom: 24px;
+  color: var(--text-secondary);
 }
 
 .cta button {
-  min-width: 180px;
+  min-width: 240px;
 }
 
 /* Demo Section */
 .demo-section {
   max-width: 100%;
   margin: 0;
-  padding: 32px 24px;
+  padding: 40px 24px;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .demo-section h2 {
-  font-size: 1.25rem;
-  margin-bottom: 8px;
+  font-size: 1.5rem;
+  margin-bottom: 12px;
   color: var(--text-primary);
   font-weight: 700;
 }
 
 .demo-section p {
-  color: var(--text-tertiary);
-  margin-bottom: 12px;
-  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  font-size: 0.95rem;
 }
 
 .demo-output {
-  background: var(--bg-secondary);
+  background: var(--card-bg);
   color: var(--text-secondary);
-  padding: 12px;
-  border-radius: 4px;
+  padding: 16px;
+  border-radius: 8px;
   border: 1px solid var(--border-color);
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  line-height: 1.5;
+  font-size: 0.8rem;
+  line-height: 1.6;
   overflow-x: auto;
   white-space: pre-wrap;
   word-break: break-word;
-  min-height: 80px;
+  min-height: 100px;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .hero {
-    padding: 24px;
+    padding: 40px 24px;
   }
 
   .hero h1 {
-    font-size: 1.75rem;
+    font-size: 2rem;
   }
 
   .hero-subtitle {
-    font-size: 1rem;
+    font-size: 1.05rem;
   }
 
   .hero-description {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
   }
 
   .hero-actions {
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
   }
 
   .hero-actions button {
@@ -295,26 +317,26 @@
 
   .hero-stats {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 20px;
   }
 
   .features,
   .how-it-works,
   .cta,
   .demo-section {
-    padding: 24px;
+    padding: 32px 24px;
   }
 
   .features h2,
   .how-it-works h2 {
-    font-size: 1.5rem;
-    margin-bottom: 16px;
+    font-size: 1.75rem;
+    margin-bottom: 32px;
   }
 
   .features-grid,
   .steps {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 16px;
   }
 
   .cta button {

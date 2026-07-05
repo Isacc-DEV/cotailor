@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/app/components/ui';
+import { routeForState } from '@/app/lib/session-routes';
 import './sidebar.css';
 
 interface JDHistory {
@@ -80,8 +81,9 @@ export function Sidebar() {
     fetchJDHistory();
   }, [isClient, showSidebar]);
 
-  const handleSessionClick = (sessionId: string) => {
-    router.push(`/jd-input?sessionId=${sessionId}`);
+  // Open the session where it left off — finished ones go straight to the resume.
+  const handleSessionClick = (sessionId: string, state: string) => {
+    router.push(routeForState(state, sessionId));
     setIsOpen(false);
   };
 
@@ -222,7 +224,7 @@ export function Sidebar() {
                 <button
                   key={item.id}
                   className={`session-item ${currentSessionId === item.id ? 'active' : ''}`}
-                  onClick={() => handleSessionClick(item.id)}
+                  onClick={() => handleSessionClick(item.id, item.state)}
                   title={`${item.profileName} - ${item.jdTitle}`}
                 >
                   <div className="session-item-content">

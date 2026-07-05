@@ -28,30 +28,29 @@ export const jdPrecheckSchema = z.object({
 export type JdPrecheck = z.infer<typeof jdPrecheckSchema>;
 
 // #2 Skill Extraction Output (Section 9)
+// Focused shape: exhaustive skill/tool/platform keywords in three priority
+// buckets, plus certifications and hard-gate knockouts. Legacy descriptive
+// buckets are optional for backward compatibility with stored raw analyses.
 export const skillExtractionSchema = z.object({
   required_skills: z.array(z.string()),
   preferred_skills: z.array(z.string()),
-  tools: z.array(z.string()),
-  technologies: z.array(z.string()),
-  responsibilities: z.array(z.string()),
-  soft_skills: z.array(z.string()),
+  mentioned_skills: z.array(z.string()).optional(),
+  all_keywords: z.array(z.string()).optional(),
   certifications: z.array(z.string()),
   knockout_requirements: z.array(
     z.object({
-      type: z.enum([
-        'work_authorization',
-        'security_clearance',
-        'location_onsite',
-        'years_experience',
-        'certification',
-        'license',
-        'education',
-      ]),
+      // Free-form; the backend gate applies a strict allowlist (GatesService).
+      type: z.string(),
       value: z.string(),
       evidence_quote: z.string(),
     }),
   ),
-  domain_keywords: z.array(z.string()),
+  // Legacy fields (older stored analyses) — no longer produced by extraction.
+  tools: z.array(z.string()).optional(),
+  technologies: z.array(z.string()).optional(),
+  responsibilities: z.array(z.string()).optional(),
+  soft_skills: z.array(z.string()).optional(),
+  domain_keywords: z.array(z.string()).optional(),
 });
 export type SkillExtraction = z.infer<typeof skillExtractionSchema>;
 

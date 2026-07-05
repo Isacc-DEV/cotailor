@@ -1,32 +1,41 @@
 :root {
-  /* Colors - Minimal Dark Theme */
-  --accent: #60a5fa;
-  --accent-hover: #3b82f6;
+  /* ChatGPT-inspired Color Palette */
+  --accent: #10a37f;
+  --accent-hover: #0d8659;
+  --accent-light: #19c37d;
 
-  --text-primary: #f3f4f6;
-  --text-secondary: #d1d5db;
-  --text-tertiary: #9ca3af;
+  --text-primary: #ececf1;
+  --text-secondary: #b4b8c0;
+  --text-tertiary: #8b8d98;
 
-  --bg-primary: #111827;
-  --bg-secondary: #1f2937;
-  --bg-tertiary: #2d3748;
+  --bg-primary: #0d0e15;
+  --bg-secondary: #1a1b26;
+  --bg-tertiary: #2a2b35;
+  --bg-surface: #0d0e15;
 
-  --sidebar-bg: #111827;
-  --card-bg: #1f2937;
+  --sidebar-bg: #0d0e15;
+  --card-bg: #1a1b26;
+  --card-hover-bg: #25262f;
 
-  --border-color: #374151;
-  --border-dark: #4b5563;
+  --border-color: #413f47;
+  --border-light: #565869;
 
-  --scrollbar-thumb: #4b5563;
-  --scrollbar-track: #1f2937;
+  --scrollbar-thumb: #565869;
+  --scrollbar-track: #1a1b26;
 
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 12px 0 rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 20px 0 rgba(0, 0, 0, 0.6);
 
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
   --font-mono: 'Menlo', 'Monaco', 'Courier New', monospace;
+
+  /* Semantic Colors */
+  --success: #19c37d;
+  --warning: #f5a623;
+  --error: #d64545;
+  --info: #1e90ff;
 }
 
 * {
@@ -53,7 +62,7 @@ body {
 .app-layout {
   display: grid;
   grid-template-columns: 260px 1fr;
-  grid-template-rows: 64px 1fr 48px;
+  grid-template-rows: 60px 1fr;
   height: 100vh;
   width: 100%;
 }
@@ -72,10 +81,7 @@ body {
 }
 
 .app-layout footer {
-  grid-column: 1 / -1;
-  grid-row: 3;
-  background-color: var(--sidebar-bg);
-  border-top: 1px solid var(--border-color);
+  display: none;
 }
 
 @media (max-width: 1024px) {
@@ -124,4 +130,56 @@ select {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+/* Form Elements */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+select,
+textarea {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="number"]:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--border-light);
+  background-color: var(--card-hover-bg);
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.15);
+  background-color: var(--card-bg);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--accent);
+  cursor: pointer;
 }

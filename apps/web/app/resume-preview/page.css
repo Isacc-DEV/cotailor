@@ -449,3 +449,157 @@
   }
 }
 
+
+/* --- rebuilt resume preview --- */
+.resume-preview { max-width: 820px; margin: 0 auto; padding: 2rem 1rem; }
+.resume-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+.resume-toolbar h1 { margin: 0; font-size: 1.5rem; color: var(--text-primary, #1f2937); }
+.resume-toolbar-actions { display: flex; gap: 0.5rem; }
+.changelog {
+  background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 0.5rem;
+  padding: 1rem 1.25rem; margin-bottom: 1.25rem;
+}
+.changelog h3 { margin: 0 0 0.5rem; font-size: 0.95rem; color: #0c4a6e; }
+.changelog ul { margin: 0; padding-left: 1.1rem; }
+.changelog li { font-size: 0.85rem; color: #075985; margin-bottom: 0.2rem; }
+.cl-where { color: #64748b; }
+.resume-doc {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 0.5rem;
+  padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  /* The card is always paper-white, so text must never inherit the app's
+     dark-theme (near-white) body color. */
+  color: #1f2937;
+}
+.resume-doc-header { text-align: center; border-bottom: 2px solid #1f2937; padding-bottom: 1rem; margin-bottom: 1.25rem; }
+.resume-doc-header h2 { margin: 0; font-size: 1.6rem; color: #111827; }
+.resume-title { margin: 0.25rem 0; color: #374151; font-weight: 500; }
+.resume-contact { margin: 0.25rem 0 0; color: #6b7280; font-size: 0.85rem; }
+.resume-section-title {
+  font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
+  color: #2563eb; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25rem;
+  margin: 1.25rem 0 0.6rem;
+}
+.resume-skills { color: #374151; font-size: 0.9rem; line-height: 1.6; margin: 0; }
+.resume-exp { margin-bottom: 1rem; }
+.resume-exp-head { display: flex; justify-content: space-between; font-size: 0.9rem; color: #111827; }
+.resume-exp-pos { margin: 0.1rem 0 0.35rem; color: #4b5563; font-size: 0.85rem; font-style: italic; }
+.resume-bullets { margin: 0; padding-left: 1.2rem; }
+.resume-bullets li { font-size: 0.88rem; color: #374151; margin-bottom: 0.3rem; line-height: 1.45; }
+.bullet-tailored { background: #f0fdf4; border-radius: 0.25rem; }
+.bullet-tag { margin-left: 0.5rem; font-size: 0.65rem; vertical-align: middle; }
+.resume-certs { margin: 0; padding-left: 1.2rem; }
+.resume-certs li { font-size: 0.88rem; color: #374151; margin-bottom: 0.2rem; }
+
+/* --- Final Check panel --- */
+.final-check {
+  border-radius: 0.5rem; padding: 1rem 1.25rem; margin-bottom: 1.25rem;
+  border: 1px solid;
+}
+.final-check-pass { background: #f0fdf4; border-color: #bbf7d0; }
+.final-check-warn { background: #fffbeb; border-color: #fde68a; }
+.final-check h3 { margin: 0 0 0.5rem; font-size: 0.95rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem; }
+.fc-clean { margin: 0; font-size: 0.85rem; color: #166534; }
+.final-check ul { margin: 0; padding: 0; list-style: none; }
+.fc-issue { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: baseline; padding: 0.3rem 0; font-size: 0.85rem; border-bottom: 1px dashed #e5e7eb; }
+.fc-issue:last-child { border-bottom: none; }
+.fc-type { font-weight: 700; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.03em; }
+.fc-warning .fc-type { color: #b45309; }
+.fc-info .fc-type { color: #6b7280; }
+.fc-msg { color: #374151; }
+.fc-where { color: #9ca3af; font-size: 0.75rem; }
+
+/* --- Review & Fix layer --- */
+.fc-fix-btn {
+  margin-left: auto; padding: 0.2rem 0.6rem; font-size: 0.72rem; font-weight: 600;
+  border: 1px solid #93c5fd; border-radius: 0.3rem; background: #eff6ff; color: #1d4ed8;
+  cursor: pointer; white-space: nowrap; transition: all 0.15s ease;
+}
+.fc-fix-btn:hover:not(:disabled) { background: #dbeafe; }
+.fc-fix-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.fc-fix-all { margin-left: 0.5rem; border-color: #6ee7b7; background: #ecfdf5; color: #047857; }
+.fc-fix-all:hover:not(:disabled) { background: #d1fae5; }
+
+.resume-bullets li { position: relative; }
+.bullet-actions { margin-left: 0.5rem; display: inline-flex; gap: 0.25rem; vertical-align: middle; }
+.ba-btn {
+  border: 1px solid #94a3b8; background: #f1f5f9; border-radius: 0.3rem;
+  font-size: 0.85rem; line-height: 1; padding: 0.22rem 0.5rem; cursor: pointer; color: #334155;
+  transition: all 0.15s ease;
+}
+.ba-btn:hover:not(:disabled) { color: #fff; background: #2563eb; border-color: #2563eb; }
+.ba-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.bullet-before {
+  display: block; font-size: 0.72rem; color: #9ca3af; font-style: italic; margin-top: 0.1rem;
+}
+.bullet-editor { display: flex; flex-direction: column; gap: 0.4rem; }
+.bullet-editor textarea {
+  width: 100%; padding: 0.5rem; border: 1px solid #93c5fd; border-radius: 0.35rem;
+  font-size: 0.88rem; font-family: inherit; resize: vertical;
+}
+.be-ai-hint { font-size: 0.72rem; color: #7c3aed; font-weight: 600; }
+.be-actions { display: flex; gap: 0.4rem; }
+.be-save, .be-cancel {
+  padding: 0.25rem 0.8rem; font-size: 0.78rem; border-radius: 0.3rem; cursor: pointer;
+  border: 1px solid;
+}
+.be-save { background: #2563eb; border-color: #2563eb; color: #fff; }
+.be-save:hover:not(:disabled) { background: #1d4ed8; }
+.be-cancel { background: #fff; border-color: #d1d5db; color: #374151; }
+.be-save:disabled, .be-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* --- Two-column layout: resume left, review panels in right sidebar --- */
+.resume-layout { display: flex; gap: 1.25rem; align-items: flex-start; }
+.resume-main { flex: 1; min-width: 0; order: 1; }
+.resume-side {
+  width: 360px; flex-shrink: 0; order: 2;
+  position: sticky; top: 1rem;
+  display: flex; flex-direction: column; gap: 1rem;
+  max-height: calc(100vh - 2rem); overflow-y: auto;
+}
+.resume-side .final-check { order: -1; margin-bottom: 0; }  /* Final Check above What we changed */
+.resume-side .changelog { margin-bottom: 0; }
+.be-ai-unverified { color: #b45309; }
+
+@media (max-width: 1000px) {
+  .resume-layout { flex-direction: column; }
+  .resume-side { width: 100%; position: static; max-height: none; order: 0; }
+  .resume-main { order: 1; }
+}
+
+/* --- Print / PDF export: only the resume document, paper-ready --- */
+@page { margin: 0.6in; }
+
+@media print {
+  /* Undo the 100vh app shell so content isn't clipped to one page */
+  html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+  .app-layout { display: block !important; height: auto !important; }
+  .app-layout header, .app-layout footer, .sidebar, .sidebar-overlay, .sidebar-toggle-mobile { display: none !important; }
+  .app-layout main { overflow: visible !important; height: auto !important; }
+
+  /* Hide everything on the page except the document itself */
+  .resume-toolbar, .resume-side, .error-message { display: none !important; }
+  .resume-preview { padding: 0 !important; max-width: none !important; margin: 0 !important; }
+  .resume-layout { display: block !important; }
+  .resume-main { width: 100% !important; }
+
+  /* Paper styling: black on white, no card chrome */
+  .resume-doc {
+    border: none !important; box-shadow: none !important; border-radius: 0 !important;
+    padding: 0 !important; background: #fff !important;
+  }
+  .resume-doc, .resume-doc * { color: #000 !important; background: transparent !important; }
+  .resume-doc-header { border-bottom: 2px solid #000 !important; }
+  .resume-section-title { color: #000 !important; border-bottom: 1px solid #888 !important; }
+
+  /* Review chrome never prints */
+  .bullet-actions, .bullet-tag, .bullet-before, .bullet-editor, .be-ai-hint, .badge { display: none !important; }
+  .bullet-tailored { background: transparent !important; border-radius: 0 !important; }
+
+  /* Sensible page breaks */
+  .resume-exp { page-break-inside: avoid; break-inside: avoid; }
+  .resume-doc-header { page-break-after: avoid; }
+  .resume-section-title { page-break-after: avoid; }
+}
+
+/* Summary section */
+.resume-summary-text { margin: 0; font-size: 0.9rem; line-height: 1.55; color: #374151; }

@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { JdAnalysis, SkillExtraction } from '@cotailor/shared';
+import { classifySkill, findRelevantBullet, isSpecificSkill } from '@cotailor/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { LLM_PROVIDER, type LLMProvider } from '../llm/llm-provider.interface';
 import { GatesService } from '../core/gates.service';
@@ -179,6 +180,172 @@ export class AnalysisService {
       });
     }
 
+    // ---- Skill gap cards (design Section 9) ----
+    await this.createSkillCards(sessionId, session.profile, extraction);
+
     this.events.emit(sessionId, 'cards_ready', { state: 'WAITING_SKILL_DECISIONS' });
+  }
+
+  // Compares JD skills/certs against the profile and raises decision cards for
+  // each REQUIRED gap. Preferred/mentioned gaps auto-resolve to "omit" (assumed
+  // defaults). Card cap is generous so exhaustive extraction isn't silently
+  // truncated; truncation is logged when it happens.
+  private async createSkillCards(
+    sessionId: string,
+    profile: { baseResume: unknown },
+    extraction: SkillExtraction,
+  ): Promise<void> {
+    const CARD_BUDGET = 20;
+
+    const base =
+      profile.baseResume && typeof profile.baseResume === 'object'
+        ? (profile.baseResume as any)
+        : {};
+    const profileSkills: string[] = Array.isArray(base.skills) ? base.skills : [];
+    const workExperience: Array<{ bullets?: string[]; technologies?: string[] }> = Array.isArray(
+      base.workExperience,
+    )
+      ? base.workExperience
+      : [];
+
+    // How many cards already exist this session (knockout, etc.).
+    const existing = await this.cards.listBySession(sessionId);
+    let budget = CARD_BUDGET - existing.length;
+
+    // Dedupe case-insensitively and drop bare umbrella terms ("APIs", "Cloud")
+    // that extraction should have expanded into concrete items. Buckets are
+    // meant to be exclusive but we enforce it here too (required wins).
+    const seen = new Set<string>();
+    const dedupe = (skills: string[]) =>
+      skills.filter((s) => {
+        const key = s.trim().toLowerCase();
+        if (!key || seen.has(key) || !isSpecificSkill(s)) return false;
+        seen.add(key);
+        return true;
+      });
+
+    const required = dedupe(extraction.required_skills ?? []);
+    const preferred = dedupe(extraction.preferred_skills ?? []);
+    const mentioned = dedupe(extraction.mentioned_skills ?? []);
+    const autoOmitted: string[] = [];
+
+    let truncated = 0;
+    for (const jdSkill of required) {
+      const c = classifySkill(profileSkills, jdSkill);
+
+      if (c.match === 'exact') continue;
+
+      // Only actual gaps consume budget; count the ones we couldn't show.
+      if (budget <= 0) {
+        truncated++;
+        continue;
+      }
+
+      if (c.match === 'similar') {
+        const rel = findRelevantBullet(workExperience, c.profileSkill);
+        await this.cards.create(sessionId, 'similar_skill', 'warning', {
+          card_type: 'similar_skill',
+          title: `The job wants ${jdSkill}; you have ${c.profileSkill}.`,
+          message: `These are related. How should we present ${jdSkill}?`,
+          options: [
+            {
+              option_id: 'exchange',
+              label: `Exchange — present ${c.profileSkill} as ${jdSkill}`,
+              consequence: `A bullet is rewritten to say ${jdSkill}. You'll approve the wording.`,
+            },
+            {
+              option_id: 'both',
+              label: `Both — mention ${c.profileSkill} and ${jdSkill}`,
+              consequence: `A bullet is rewritten to include both. You'll approve the wording.`,
+            },
+            {
+              option_id: 'skills_only',
+              label: `Add ${jdSkill} to Skills only`,
+              consequence: 'Listed in Skills; work history untouched.',
+            },
+            { option_id: 'omit', label: 'Leave it out', consequence: `${jdSkill} is not added.` },
+          ],
+          recommended_option: 'skills_only',
+          severity: 'warning',
+          context: {
+            jd_skill: jdSkill,
+            profile_skill: c.profileSkill,
+            relevant_bullet: rel,
+            risk_note: `${jdSkill} claimed via ${c.profileSkill} similarity — be ready to speak to it.`,
+          },
+        });
+        budget--;
+        continue;
+      }
+
+      // missing
+      await this.cards.create(sessionId, 'missing_required_skill', 'blocking', {
+        card_type: 'missing_required_skill',
+        title: `The job requires ${jdSkill}, which isn't on your profile.`,
+        message: `You don't have anything close to ${jdSkill}. What should we do?`,
+        options: [
+          {
+            option_id: 'add_experience',
+            label: `Add a new bullet for ${jdSkill}`,
+            consequence: `A new bullet is drafted. You'll approve the wording.`,
+          },
+          {
+            option_id: 'skills_only',
+            label: `Add ${jdSkill} to Skills only`,
+            consequence: 'Listed in Skills; work history untouched.',
+          },
+          { option_id: 'omit', label: 'Leave it out', consequence: `${jdSkill} is not added.` },
+        ],
+        recommended_option: 'omit',
+        severity: 'blocking',
+        context: { jd_skill: jdSkill },
+      });
+      budget--;
+    }
+
+    if (truncated > 0) {
+      this.logger.warn(
+        `Session ${sessionId}: card budget (${CARD_BUDGET}) hit — ${truncated} required-skill gap(s) not shown as cards.`,
+      );
+    }
+
+    // Preferred/mentioned gaps auto-resolve to omit (assumed defaults, no card).
+    const unmatchedMentioned: string[] = [];
+    for (const jdSkill of preferred) {
+      if (classifySkill(profileSkills, jdSkill).match !== 'exact') autoOmitted.push(jdSkill);
+    }
+    for (const jdSkill of mentioned) {
+      if (classifySkill(profileSkills, jdSkill).match !== 'exact') unmatchedMentioned.push(jdSkill);
+    }
+    if (autoOmitted.length > 0 || unmatchedMentioned.length > 0) {
+      this.events.emit(sessionId, 'assumed_defaults', {
+        omitted_preferred_skills: autoOmitted,
+        unmatched_mentioned_skills: unmatchedMentioned,
+      });
+    }
+
+    // Required certifications not present on the profile.
+    const profileCerts: string[] = Array.isArray(base.certifications)
+      ? base.certifications.map((c: any) => String(c?.name ?? '').toLowerCase())
+      : [];
+    for (const cert of extraction.certifications ?? []) {
+      if (budget <= 0) break;
+      const have = profileCerts.some((p) => p.includes(cert.toLowerCase()) || cert.toLowerCase().includes(p));
+      if (have) continue;
+      await this.cards.create(sessionId, 'certification_risk', 'blocking', {
+        card_type: 'certification_risk',
+        title: `The job requires the ${cert} certification.`,
+        message: `This certification isn't on your profile.`,
+        options: [
+          { option_id: 'studying', label: "Say I'm studying for it", consequence: 'Shown as in progress.' },
+          { option_id: 'omit', label: 'Leave it out', consequence: 'Not mentioned.' },
+          { option_id: 'cancel', label: 'Cancel', consequence: 'Ends this session.' },
+        ],
+        recommended_option: 'omit',
+        severity: 'blocking',
+        context: { certification: cert },
+      });
+      budget--;
+    }
   }
 }
