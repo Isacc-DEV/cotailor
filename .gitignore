@@ -1,47 +1,89 @@
-# Dependencies
+# ── Dependencies ─────────────────────────────────────────────
 node_modules/
+.pnpm-store/
 .pnpm-debug.log*
+
+# Lockfiles from other package managers (this repo uses pnpm)
+package-lock.json
+yarn.lock
+
+# pnpm lockfile intentionally ignored on this project
 pnpm-lock.yaml
 
-# Build outputs
+# ── Build outputs ────────────────────────────────────────────
 dist/
 build/
-*.tsbuildinfo
-.next/
 out/
+*.tsbuildinfo
 
-# Environment
+# Next.js
+.next/
+next-env.d.ts
+.vercel/
+.turbo/
+
+# ── Environment & secrets ────────────────────────────────────
 .env
-.env.local
-.env.*.local
-.env.production.local
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
+# ── Databases & Prisma ───────────────────────────────────────
+prisma/migrations/
+*.sqlite
+*.sqlite3
+*.db
 
-# Logs
+# ── Logs ─────────────────────────────────────────────────────
 logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Prisma
-prisma/migrations/
-
-# Testing
+# ── Testing & coverage ───────────────────────────────────────
 coverage/
 .nyc_output/
+*.lcov
 
-# Temporary
+# ── Caches ───────────────────────────────────────────────────
+.cache/
+.eslintcache
+.stylelintcache
+*.tgz
+
+# ── IDE & editors ────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ── AI assistants ────────────────────────────────────────────
+.claude/
+CLAUDE.local.md
+.cursor/
+.aider*
+
+# ── OS junk ──────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── Temporary files ──────────────────────────────────────────
 *.tmp
+*.bak
 temp/
+tmp/
+.scratch/
