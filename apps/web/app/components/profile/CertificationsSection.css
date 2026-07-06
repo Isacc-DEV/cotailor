@@ -130,9 +130,9 @@
 }
 
 .expired-badge {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
+  position: relative;
+  left: 0px;
+  top: -2px;
   padding: 0.375rem 0.75rem;
   background-color: var(--error-bg);
   color: var(--error);

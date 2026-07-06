@@ -453,12 +453,12 @@ export default function ProfileEditor() {
 
   return (
     <div className="profile-editor">
+      <h1>Edit Profile</h1>
       <div className="editor-header">
         <div className="header-left">
           <Button variant="secondary" onClick={() => router.push('/profile-selector')}>
             ← Back to Profiles
           </Button>
-          <h1>Edit Profile</h1>
         </div>
 
         <div className="header-actions">

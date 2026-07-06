@@ -287,7 +287,12 @@ export default function CertificationsSection({
               >
                 <div className="cert-header">
                   <div className="cert-title">
-                    <h3>{cert.name}</h3>
+                    <h3>
+                      {cert.name} &nbsp;
+                      {isExpired(cert.expiryDate) && (
+                        <span className="expired-badge">Expired</span>
+                      )}  
+                    </h3>
                     {cert.issuer && <p className="issuer">{cert.issuer}</p>}
                     <div className="cert-dates">
                       {cert.issueDate && (
@@ -337,10 +342,6 @@ export default function CertificationsSection({
                     </a>
                   )}
                 </div>
-
-                {isExpired(cert.expiryDate) && (
-                  <div className="expired-badge">Expired</div>
-                )}
               </div>
             ))}
           </div>
