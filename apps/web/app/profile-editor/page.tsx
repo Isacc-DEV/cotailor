@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useProfiles } from '@/app/hooks/useProfiles';
 import { Button, Spinner } from '@/app/components/ui';
 import { exportProfile, importProfile, copyProfileToClipboard, pasteProfileFromClipboard } from '@/app/lib/profile-export';
+import { normalizeSkills } from '@/app/lib/normalize-skills';
 import WorkExperienceSection from '@/app/components/profile/WorkExperienceSection';
 import EducationSection from '@/app/components/profile/EducationSection';
 import CertificationsSection from '@/app/components/profile/CertificationsSection';
@@ -86,67 +87,6 @@ const SUBTYPES: Record<string, string[]> = {
   'Human Resources': ['Recruiter', 'HRBP', 'Compensation', 'Learning'],
 };
 
-/**
- * Normalize skills from any imported JSON shape into a flat string[].
- * Recursively descends so it handles:
- *  - string[]                                   -> ["Node.js", "React"]
- *  - {name}[] / {skill}[] / {label}[]           -> [{name:"Node.js"}] -> ["Node.js"]
- *  - categorized object                         -> {languages:["JS"]} -> ["JS"]
- *  - categorized object with items arrays       -> {backend:{category,items:[{name}]}} -> ["Node.js", ...]
- *  - comma-separated string                     -> "Node.js, React" -> ["Node.js","React"]
- */
-function normalizeSkills(raw: any): string[] {
-  if (!raw) return [];
-
-  if (typeof raw === 'string') {
-    return raw
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-  }
-
-  const out: string[] = [];
-
-  const visit = (node: any) => {
-    if (!node) return;
-
-    if (typeof node === 'string') {
-      const s = node.trim();
-      if (s) out.push(s);
-      return;
-    }
-
-    if (Array.isArray(node)) {
-      node.forEach(visit);
-      return;
-    }
-
-    if (typeof node === 'object') {
-      // Leaf skill object: take its name and stop descending.
-      const leaf = node.name ?? node.skill ?? node.label;
-      if (typeof leaf === 'string') {
-        const s = leaf.trim();
-        if (s) out.push(s);
-        return;
-      }
-      // Category object with an items array: descend only into items
-      // (skip sibling fields like "category" so labels aren't treated as skills).
-      if (Array.isArray(node.items)) {
-        node.items.forEach(visit);
-        return;
-      }
-      // Generic object: descend into all values.
-      Object.values(node).forEach(visit);
-      return;
-    }
-  };
-
-  visit(raw);
-
-  // De-duplicate while preserving order.
-  return Array.from(new Set(out));
-}
-
 export default function ProfileEditor() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -164,6 +104,9 @@ export default function ProfileEditor() {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string[] | null>(null);
   const [undoStack, setUndoStack] = useState<Partial<Profile>[]>([]);
+  // Bumped on import to remount the section components — an entry mid-edit
+  // would otherwise keep its stale editing form open over the imported data.
+  const [importVersion, setImportVersion] = useState(0);
 
   useEffect(() => {
     if (profileId && profiles.length > 0) {
@@ -299,6 +242,7 @@ export default function ProfileEditor() {
 
         setFormData(importedData);
         setImportError(null);
+        setImportVersion((v) => v + 1);
         alert('Profile imported successfully! Review and save your changes.');
       } else {
         setImportError(result.errors || []);
@@ -341,6 +285,7 @@ export default function ProfileEditor() {
 
         setFormData(importedData);
         setImportError(null);
+        setImportVersion((v) => v + 1);
         alert('Profile pasted successfully! Review and save your changes.');
       } else {
         setImportError(result.errors || []);
@@ -698,6 +643,7 @@ export default function ProfileEditor() {
 
         {/* Section 3: Work Experience */}
         <WorkExperienceSection
+          key={`work-${importVersion}`}
           experiences={formData.workExperience || []}
           onChange={(experiences) =>
             setFormData((prev) => ({ ...prev, workExperience: experiences }))
@@ -708,6 +654,7 @@ export default function ProfileEditor() {
 
         {/* Section 4: Education */}
         <EducationSection
+          key={`edu-${importVersion}`}
           education={formData.education || []}
           onChange={(education) =>
             setFormData((prev) => ({ ...prev, education }))
@@ -736,6 +683,7 @@ export default function ProfileEditor() {
 
         {/* Section 6: Certifications */}
         <CertificationsSection
+          key={`cert-${importVersion}`}
           certifications={formData.certifications || []}
           onChange={(certifications) =>
             setFormData((prev) => ({ ...prev, certifications }))

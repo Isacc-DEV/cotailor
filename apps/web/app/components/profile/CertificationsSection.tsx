@@ -309,6 +309,7 @@ export default function CertificationsSection({
                   </div>
                   <div className="cert-actions">
                     <button
+                      type="button"
                       className="btn-edit"
                       onClick={() => handleEdit(idx)}
                       aria-label="Edit certification"
@@ -317,6 +318,7 @@ export default function CertificationsSection({
                       Edit
                     </button>
                     <button
+                      type="button"
                       className="btn-delete"
                       onClick={() => handleDelete(idx)}
                       aria-label="Delete certification"

@@ -6,16 +6,39 @@ export class ProfilesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, body: any) {
+    // Mirror update(): flat resume fields (header, workExperience, ...) fold
+    // into the baseResume blob — Profile has no columns for them, and clients
+    // send the form shape flat. Dropping them here silently loses user data.
+    const base: any =
+      body?.baseResume && typeof body.baseResume === 'object' ? { ...body.baseResume } : {};
+    if (body?.header !== undefined) base.header = body.header;
+    if (body?.resumeStyle !== undefined) base.resumeStyle = body.resumeStyle;
+    if (body?.subtype !== undefined) base.subtype = body.subtype;
+    if (body?.workExperience !== undefined) base.workExperience = body.workExperience;
+    if (body?.education !== undefined) base.education = body.education;
+    if (body?.certifications !== undefined) base.certifications = body.certifications;
+    if (body?.skills !== undefined) base.skills = body.skills;
+    if (body?.topSkills !== undefined) base.topSkills = body.topSkills;
+
+    const skills: string[] = Array.isArray(body?.skills)
+      ? body.skills.filter((n: unknown): n is string => typeof n === 'string' && n.trim() !== '')
+      : [];
+    const subtypes: string[] = Array.isArray(body?.subtypes)
+      ? body.subtypes
+      : typeof body?.subtype === 'string' && body.subtype
+        ? [body.subtype]
+        : [];
+
     return this.prisma.profile.create({
       data: {
         userId,
         name: body?.name ?? 'Backend Engineer — Node.js',
         category: body?.category ?? 'Software Engineering',
-        baseResume: body?.baseResume ?? {},
+        baseResume: base,
         domainTags: body?.domainTags ?? [],
         workAuthorization: body?.workAuthorization ?? null,
-        subtypes: body?.subtypes ? { create: body.subtypes.map((n: string) => ({ name: n })) } : undefined,
-        skills: body?.skills ? { create: body.skills.map((n: string) => ({ name: n })) } : undefined,
+        subtypes: subtypes.length ? { create: subtypes.map((n: string) => ({ name: n })) } : undefined,
+        skills: skills.length ? { create: skills.map((n: string) => ({ name: n.trim() })) } : undefined,
       },
       include: { subtypes: true, skills: true },
     });

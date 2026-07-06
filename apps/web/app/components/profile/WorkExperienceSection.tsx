@@ -462,6 +462,7 @@ export default function WorkExperienceSection({
                   </div>
                   <div className="exp-actions">
                     <button
+                      type="button"
                       className="btn-edit"
                       onClick={() => handleEdit(idx)}
                       aria-label="Edit job"
@@ -470,6 +471,7 @@ export default function WorkExperienceSection({
                       Edit
                     </button>
                     <button
+                      type="button"
                       className="btn-delete"
                       onClick={() => handleDelete(idx)}
                       aria-label="Delete job"

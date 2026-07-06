@@ -410,6 +410,7 @@ export default function EducationSection({
                   </div>
                   <div className="edu-actions">
                     <button
+                      type="button"
                       className="btn-edit"
                       onClick={() => handleEdit(idx)}
                       aria-label="Edit education"
@@ -418,6 +419,7 @@ export default function EducationSection({
                       Edit
                     </button>
                     <button
+                      type="button"
                       className="btn-delete"
                       onClick={() => handleDelete(idx)}
                       aria-label="Delete education"
