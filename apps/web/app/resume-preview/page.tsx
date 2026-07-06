@@ -61,6 +61,25 @@ interface EditingState {
   aiVerified?: boolean;
 }
 
+interface AiChange {
+  expIndex: number;
+  bulletIndex: number;
+  before: string;
+}
+interface SkippedIssue {
+  type: string;
+  text?: string;
+  where: string;
+}
+// One "Fix all" run held for review: the full pre-run snapshot (Undo all),
+// per-bullet befores (per-bullet undo), and what couldn't be fixed.
+interface FixAllReview {
+  before: Resume;
+  changes: AiChange[];
+  skipped: SkippedIssue[];
+  formattingChanged: boolean;
+}
+
 // The lint types the AI can fix per-bullet (formatting is fixed deterministically).
 const AI_FIXABLE = new Set(['buzzword', 'weak_phrase', 'repeated_first_word']);
 const FORMATTING = new Set(['punctuation_inconsistent', 'capitalization']);
@@ -78,6 +97,49 @@ function fixInstruction(issue: QualityIssue): string {
   }
 }
 
+const firstWordOf = (t: string) => (t.trim().split(/\s+/)[0] || '').toLowerCase().replace(/[^a-z]/g, '');
+
+// Openers of every bullet except the target — forbidden for a rewrite so it
+// can't create a new repeated-opener issue.
+function otherOpeners(r: Resume, expIndex: number, bulletIndex: number): string[] {
+  return Array.from(
+    new Set(
+      r.workExperience.flatMap((e, ei) =>
+        e.bullets
+          .map((b, bi) => ({ ei, bi, w: firstWordOf(b.text) }))
+          .filter(({ ei: e2, bi: b2, w }) => w && !(e2 === expIndex && b2 === bulletIndex))
+          .map(({ w }) => w),
+      ),
+    ),
+  );
+}
+
+// During a batch run an earlier rewrite may have already cleared a later issue.
+function stillApplies(issue: QualityIssue, text: string): boolean {
+  if (issue.type === 'buzzword' || issue.type === 'weak_phrase') {
+    return issue.text ? text.toLowerCase().includes(issue.text) : true;
+  }
+  if (issue.type === 'repeated_first_word') return firstWordOf(text) === issue.text;
+  return true;
+}
+
+// Capitalize first letters and apply the majority punctuation style to every
+// bullet. Deterministic — no AI involved. Mutates the given copy.
+function applyFormattingFixes(next: Resume): void {
+  const all = next.workExperience.flatMap((e) => e.bullets);
+  const withPeriod = all.filter((b) => /[.!?]\s*$/.test(b.text)).length;
+  const usePeriod = withPeriod * 2 >= all.length; // majority (tie → periods)
+  for (const exp of next.workExperience) {
+    for (const b of exp.bullets) {
+      let t = b.text.trim();
+      if (t) t = t.charAt(0).toUpperCase() + t.slice(1);
+      if (usePeriod && !/[.!?]$/.test(t)) t = `${t}.`;
+      if (!usePeriod) t = t.replace(/\.+$/, '');
+      b.text = t;
+    }
+  }
+}
+
 export default function ResumePreview() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -88,6 +150,8 @@ export default function ResumePreview() {
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [editingSummary, setEditingSummary] = useState<{ value: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null); // which action is running
+  const [fixAllProgress, setFixAllProgress] = useState<{ done: number; total: number } | null>(null);
+  const [review, setReview] = useState<FixAllReview | null>(null);
 
   const load = useCallback(async () => {
     if (!sessionId) return;
@@ -148,6 +212,7 @@ export default function ResumePreview() {
       b.text = editing.value.trim();
       await save(next);
       setEditing(null);
+      setReview(null); // a manual edit ends the batch-fix review
     });
 
   const commitSummary = () =>
@@ -157,6 +222,7 @@ export default function ResumePreview() {
       next.summary = editingSummary.value.trim();
       await save(next);
       setEditingSummary(null);
+      setReview(null);
     });
 
   const revert = (expIndex: number, bulletIndex: number) =>
@@ -173,27 +239,16 @@ export default function ResumePreview() {
         b.provenance = 'profile_verified';
       }
       await save(next);
+      setReview(null); // splicing shifts bullet indexes — the review's targets are stale
     });
 
-  // Deterministic formatting fix: capitalize first letters and apply the
-  // majority punctuation style to every bullet. No AI involved.
   const fixFormatting = () =>
     withBusy('formatting', async () => {
       if (!resume) return;
       const next = clone();
-      const all = next.workExperience.flatMap((e) => e.bullets);
-      const withPeriod = all.filter((b) => /[.!?]\s*$/.test(b.text)).length;
-      const usePeriod = withPeriod * 2 >= all.length; // majority (tie → periods)
-      for (const exp of next.workExperience) {
-        for (const b of exp.bullets) {
-          let t = b.text.trim();
-          if (t) t = t.charAt(0).toUpperCase() + t.slice(1);
-          if (usePeriod && !/[.!?]$/.test(t)) t = `${t}.`;
-          if (!usePeriod) t = t.replace(/\.+$/, '');
-          b.text = t;
-        }
-      }
+      applyFormattingFixes(next);
       await save(next);
+      setReview(null);
     });
 
   // AI style fix: fetch a suggestion for the target bullet and open it in the
@@ -213,25 +268,107 @@ export default function ResumePreview() {
       const text = resume.workExperience[target.expIndex]?.bullets[target.bulletIndex]?.text;
       if (!text) return;
 
-      // First words of every other bullet → forbidden openers for the rewrite.
-      const avoidOpeners = Array.from(
-        new Set(
-          resume.workExperience.flatMap((e, ei) =>
-            e.bullets
-              .map((b, bi) => ({ ei, bi, w: (b.text.trim().split(/\s+/)[0] || '').toLowerCase().replace(/[^a-z]/g, '') }))
-              .filter(({ ei, bi, w }) => w && !(ei === target.expIndex && bi === target.bulletIndex))
-              .map(({ w }) => w),
-          ),
-        ),
-      );
-
       if (!sessionId) return;
       const { text: suggestion, verified } = await api.sessions.fixBullet(sessionId, {
         text,
         instruction: fixInstruction(issue),
-        avoid_openers: avoidOpeners,
+        avoid_openers: otherOpeners(resume, target.expIndex, target.bulletIndex),
       });
       startEdit(target.expIndex, target.bulletIndex, suggestion, true, verified !== false);
+    });
+
+  // One-click batch fix: deterministic formatting plus every AI-fixable issue.
+  // Rewrites run SEQUENTIALLY — each accepted rewrite's opener feeds into the
+  // next call's avoid_openers, so the batch can't reintroduce repeated openers.
+  // Nothing persists until the single save at the end; the review bar then
+  // offers Keep all / Undo all, and unverified rewrites are never applied.
+  const fixAllWithAI = () =>
+    withBusy('fix-all', async () => {
+      if (!resume || !sessionId || !resume.qualityReport) return;
+      const beforeSnapshot = clone();
+      const next = clone();
+
+      const jobs: Array<{ expIndex: number; bulletIndex: number; issue: QualityIssue }> = [];
+      for (const issue of resume.qualityReport.issues) {
+        if (!AI_FIXABLE.has(issue.type)) continue;
+        if (issue.expIndex !== undefined && issue.bulletIndex !== undefined) {
+          jobs.push({ expIndex: issue.expIndex, bulletIndex: issue.bulletIndex, issue });
+        } else if (issue.targets && issue.targets.length > 1) {
+          for (const t of issue.targets.slice(1)) jobs.push({ ...t, issue }); // keep the first occurrence
+        }
+      }
+      const hadFormattingIssues = resume.qualityReport.issues.some((i) => FORMATTING.has(i.type));
+      if (jobs.length === 0 && !hadFormattingIssues) return;
+
+      setFixAllProgress({ done: 0, total: jobs.length });
+      const changes = new Map<string, AiChange>();
+      const skipped: SkippedIssue[] = [];
+      try {
+        for (let i = 0; i < jobs.length; i++) {
+          const { expIndex, bulletIndex, issue } = jobs[i];
+          setFixAllProgress({ done: i, total: jobs.length });
+          const bullet = next.workExperience[expIndex]?.bullets[bulletIndex];
+          if (!bullet || !stillApplies(issue, bullet.text)) continue;
+          const { text: suggestion, verified } = await api.sessions.fixBullet(sessionId, {
+            text: bullet.text,
+            instruction: fixInstruction(issue),
+            avoid_openers: otherOpeners(next, expIndex, bulletIndex),
+          });
+          if (verified === false || !suggestion?.trim()) {
+            skipped.push({ type: issue.type, text: issue.text, where: issue.where });
+            continue;
+          }
+          const key = `${expIndex}:${bulletIndex}`;
+          if (!changes.has(key)) {
+            changes.set(key, {
+              expIndex,
+              bulletIndex,
+              before: beforeSnapshot.workExperience[expIndex].bullets[bulletIndex].text,
+            });
+          }
+          bullet.text = suggestion.trim();
+        }
+        setFixAllProgress({ done: jobs.length, total: jobs.length });
+
+        // Formatting runs LAST so AI rewrites get normalized too.
+        if (hadFormattingIssues || changes.size > 0) {
+          applyFormattingFixes(next);
+          await save(next);
+        }
+        setReview(
+          changes.size > 0 || skipped.length > 0 || hadFormattingIssues
+            ? { before: beforeSnapshot, changes: [...changes.values()], skipped, formattingChanged: hadFormattingIssues }
+            : null,
+        );
+      } finally {
+        setFixAllProgress(null);
+      }
+    });
+
+  const undoAiFix = (expIndex: number, bulletIndex: number) =>
+    withBusy(`undo-ai-${expIndex}-${bulletIndex}`, async () => {
+      if (!review || !resume) return;
+      const change = review.changes.find((c) => c.expIndex === expIndex && c.bulletIndex === bulletIndex);
+      if (!change) return;
+      const next = clone();
+      const b = next.workExperience[expIndex]?.bullets[bulletIndex];
+      if (b) {
+        b.text = change.before;
+        await save(next);
+      }
+      const remaining = review.changes.filter((c) => c !== change);
+      setReview(
+        remaining.length > 0 || review.skipped.length > 0 || review.formattingChanged
+          ? { ...review, changes: remaining }
+          : null,
+      );
+    });
+
+  const undoAll = () =>
+    withBusy('undo-all', async () => {
+      if (!review) return;
+      await save(review.before);
+      setReview(null);
     });
 
   const downloadJson = () => {
@@ -282,6 +419,25 @@ export default function ResumePreview() {
   const h = resume.header || {};
   const qr = resume.qualityReport;
   const hasFormattingIssues = qr?.issues.some((i) => FORMATTING.has(i.type));
+  // Everything the one-click button will address: formatting issues plus
+  // AI-fixable issues that are anchored to a bullet.
+  const fixAllCount = qr
+    ? qr.issues.filter(
+        (i) =>
+          FORMATTING.has(i.type) ||
+          (AI_FIXABLE.has(i.type) && (i.expIndex !== undefined || (i.targets?.length ?? 0) > 0)),
+      ).length
+    : 0;
+  const reviewSummary = review
+    ? [
+        review.changes.length > 0
+          ? `${review.changes.length} bullet${review.changes.length === 1 ? '' : 's'} rewritten`
+          : '',
+        review.formattingChanged ? 'formatting cleaned up' : '',
+      ]
+        .filter(Boolean)
+        .join(' · ') || 'No fixes could be applied automatically'
+    : '';
 
   return (
     <div className="resume-preview">
@@ -326,27 +482,51 @@ export default function ResumePreview() {
             ) : (
               <Badge variant="warning">{qr.issues.filter((i) => i.severity === 'warning').length} issue(s)</Badge>
             )}
-            {hasFormattingIssues && (
-              <button
-                className="fc-fix-btn fc-fix-all"
-                onClick={fixFormatting}
-                disabled={busy !== null}
-              >
-                {busy === 'formatting' ? 'Fixing…' : '⚡ Fix formatting'}
-              </button>
-            )}
           </h3>
+          {fixAllProgress ? (
+            <div className="fc-progress" role="status" aria-live="polite">
+              ✨{' '}
+              {fixAllProgress.total > 0
+                ? `Rewriting bullet ${Math.min(fixAllProgress.done + 1, fixAllProgress.total)} of ${fixAllProgress.total}…`
+                : 'Fixing formatting…'}
+              <div className="fc-progress-track">
+                <div
+                  className="fc-progress-fill"
+                  style={{
+                    width: `${fixAllProgress.total ? Math.round((fixAllProgress.done / fixAllProgress.total) * 100) : 100}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
+            fixAllCount > 0 && (
+              <div className="fc-actions">
+                <button className="fc-fix-btn fc-fix-all" onClick={fixAllWithAI} disabled={busy !== null}>
+                  {busy === 'fix-all' ? 'Fixing…' : `✨ Fix all (${fixAllCount})`}
+                </button>
+                {hasFormattingIssues && (
+                  <button className="fc-fix-btn" onClick={fixFormatting} disabled={busy !== null}>
+                    {busy === 'formatting' ? 'Fixing…' : '⚡ Formatting only'}
+                  </button>
+                )}
+              </div>
+            )
+          )}
           {qr.issues.length === 0 ? (
             <p className="fc-clean">No style issues found — no buzzwords, repeated openers, or formatting inconsistencies.</p>
           ) : (
             <ul>
               {qr.issues.map((issue, i) => {
                 const key = `fix-${i}`;
+                const needsManual = review?.skipped.some(
+                  (s) => s.type === issue.type && s.text === issue.text && s.where === issue.where,
+                );
                 return (
                   <li key={i} className={`fc-issue fc-${issue.severity}`}>
                     <span className="fc-type">{issue.type.replace(/_/g, ' ')}</span>
                     <span className="fc-msg">{issue.message}</span>
                     <span className="fc-where">@ {issue.where}</span>
+                    {needsManual && <span className="fc-manual">⚠ fix by hand</span>}
                     {AI_FIXABLE.has(issue.type) &&
                       (issue.expIndex !== undefined || (issue.targets?.length ?? 0) > 0) && (
                         <button
@@ -435,8 +615,9 @@ export default function ResumePreview() {
                   {e.bullets.map((b, bi) => {
                     const isEditing = editing?.expIndex === ei && editing?.bulletIndex === bi;
                     const tailored = b.provenance === 'user_confirmed';
+                    const aiFix = review?.changes.find((c) => c.expIndex === ei && c.bulletIndex === bi);
                     return (
-                      <li key={bi} className={tailored ? 'bullet-tailored' : ''}>
+                      <li key={bi} className={`${tailored ? 'bullet-tailored' : ''} ${aiFix ? 'bullet-ai-fixed' : ''}`.trim()}>
                         {isEditing ? (
                           <div className="bullet-editor">
                             {editing.fromAI && (
@@ -478,7 +659,17 @@ export default function ResumePreview() {
                               >
                                 ✎
                               </button>
-                              {tailored && (b.originalText || b.added) && (
+                              {aiFix && (
+                                <button
+                                  className="ba-btn"
+                                  title="Undo this AI rewrite"
+                                  onClick={() => undoAiFix(ei, bi)}
+                                  disabled={busy !== null}
+                                >
+                                  ↩
+                                </button>
+                              )}
+                              {!aiFix && tailored && (b.originalText || b.added) && (
                                 <button
                                   className="ba-btn"
                                   title={b.added ? 'Remove this added bullet' : 'Revert to your original wording'}
@@ -489,6 +680,7 @@ export default function ResumePreview() {
                                 </button>
                               )}
                             </span>
+                            {aiFix && <span className="bullet-before">✨ before: {aiFix.before}</span>}
                             {tailored && b.originalText && (
                               <span className="bullet-before">before: {b.originalText}</span>
                             )}
@@ -520,6 +712,32 @@ export default function ResumePreview() {
       </div>
       </div>
       </div>
+
+      {review && (
+        <div className="fixall-review-bar" role="status">
+          <span className="frb-msg">
+            ✨ {reviewSummary}
+            {review.changes.length > 0 ? ' — changes are highlighted.' : '.'}
+            {review.skipped.length > 0 && (
+              <span className="frb-warn">
+                {' '}
+                {review.skipped.length} issue{review.skipped.length === 1 ? '' : 's'} need
+                {review.skipped.length === 1 ? 's' : ''} a manual edit.
+              </span>
+            )}
+          </span>
+          <span className="frb-actions">
+            {(review.changes.length > 0 || review.formattingChanged) && (
+              <Button variant="secondary" onClick={undoAll} disabled={busy !== null}>
+                {busy === 'undo-all' ? 'Undoing…' : 'Undo all'}
+              </Button>
+            )}
+            <Button variant="primary" onClick={() => setReview(null)} disabled={busy !== null}>
+              Keep all
+            </Button>
+          </span>
+        </div>
+      )}
     </div>
   );
 }
