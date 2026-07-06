@@ -172,6 +172,48 @@
   color: var(--text-secondary);
 }
 
+/* One-click profile rows under "+ New session" */
+.nav-profile {
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.nav-profile:hover {
+  color: var(--text-primary);
+}
+
+.nav-profile-avatar {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.nav-profile-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+}
+
+.nav-profile-last {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
+}
+
 /* Content (recent sessions) */
 .sidebar-content {
   flex: 1;

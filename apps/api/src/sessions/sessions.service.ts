@@ -113,6 +113,7 @@ export class SessionsService {
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
       jdDocumentId: s.jdDocumentId,
+      profileId: s.profileId,
       profile: s.profile ? { name: s.profile.name } : null,
       // Only the first line is needed by the UI — don't ship whole JDs.
       jdDocument: s.jdDocument ? { text: s.jdDocument.text.slice(0, 200) } : null,
