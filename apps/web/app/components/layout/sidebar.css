@@ -376,12 +376,73 @@
   gap: 2px;
 }
 
+.account {
+  position: relative;
+}
+
 .account-row {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   padding: 8px 10px;
   border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.account-row:hover,
+.account-row.open {
+  background: var(--bg-tertiary);
+}
+
+.account-caret {
+  margin-left: auto;
+  color: var(--text-tertiary);
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+/* Popover above the account row, ChatGPT-style */
+.account-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  z-index: 45;
+}
+
+.account-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.account-menu-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.account-menu-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 4px;
 }
 
 .account-avatar {
