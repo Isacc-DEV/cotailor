@@ -375,21 +375,6 @@ export class SessionsService {
         }
         break;
 
-      case 'knockout_requirement':
-        if (optionId === 'cancel') {
-          await this.cards.markAnswered(cardId, sessionId, optionId, note);
-          await this.transitions.apply(sessionId, 'CANCEL', 'SESSION_CANCELLED');
-        } else {
-          await this.cards.markAnswered(
-            cardId,
-            sessionId,
-            optionId,
-            note,
-            optionId === 'meet' ? 'user_confirmed' : undefined,
-          );
-        }
-        break;
-
       case 'certification_risk':
         if (optionId === 'cancel') {
           await this.cards.markAnswered(cardId, sessionId, optionId, note);

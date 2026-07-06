@@ -4,7 +4,6 @@ import {
   categoryRelation,
   subtypeRelation,
   type JdAnalysis,
-  type SkillExtraction,
   type SubtypeRelation,
 } from '@cotailor/shared';
 
@@ -30,29 +29,5 @@ export class GatesService {
   evaluateSubtype(profileSubtype: string, a: JdAnalysis): { relation: SubtypeRelation; mismatch: boolean } {
     const relation = subtypeRelation(profileSubtype || '', a.subtype);
     return { relation, mismatch: relation !== 'same' };
-  }
-
-  // Only these count as real hard gates worth a card. Anything else the model
-  // may have tagged as a "knockout" (remote work, personal equipment, meeting
-  // availability, years of experience) is noise and is dropped.
-  private static readonly HARD_KNOCKOUT_TYPES = new Set([
-    'work_authorization',
-    'clearance',
-    'security_clearance',
-    'license',
-    'degree',
-    'education',
-    'location',
-    'onsite',
-  ]);
-
-  // Knockouts satisfiable from the profile auto-resolve; the rest need explicit confirmation.
-  unresolvedKnockouts(profile: { workAuthorization: string | null }, ex: SkillExtraction) {
-    return (ex.knockout_requirements ?? []).filter((k) => {
-      const type = (k.type ?? '').toLowerCase();
-      if (!GatesService.HARD_KNOCKOUT_TYPES.has(type)) return false; // drop logistics/soft noise
-      if (type === 'work_authorization') return !profile.workAuthorization;
-      return true;
-    });
   }
 }

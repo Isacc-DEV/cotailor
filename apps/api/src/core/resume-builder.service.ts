@@ -221,7 +221,7 @@ export class ResumeBuilderService {
         }
         continue;
       }
-      // knockout_requirement / subtype_mismatch: no resume change.
+      // subtype_mismatch: no resume change.
     }
 
     // Summary is written LAST, from the final tailored content (all bullets

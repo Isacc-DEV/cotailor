@@ -52,14 +52,7 @@ export interface JDAnalysis {
   preferredSkills: string[];
   responsibilities: string[];
   certifications?: string[];
-  knockoutRequirements?: KnockoutRequirement[];
   domainKeywords: string[];
-}
-
-export interface KnockoutRequirement {
-  type: 'work_authorization' | 'clearance' | 'location' | 'years_experience' | 'degree' | 'license';
-  description: string;
-  required: boolean;
 }
 
 // Decision Card Types
@@ -81,7 +74,6 @@ export type CardType =
   | 'subtype_mismatch'
   | 'missing_required_skill'
   | 'similar_skill'
-  | 'knockout_requirement'
   | 'certification_risk'
   | 'resume_style'
   | 'strategy_approval';

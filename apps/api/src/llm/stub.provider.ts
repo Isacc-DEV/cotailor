@@ -57,7 +57,6 @@ export class StubLlmProvider implements LLMProvider {
         responsibilities: ['Site inspection', 'Structural design'],
         soft_skills: [],
         certifications: ['PE License'],
-        knockout_requirements: [{ type: 'license', value: 'PE License required', evidence_quote: 'PE License required.' }],
         domain_keywords: ['construction'],
       };
     }
@@ -69,9 +68,6 @@ export class StubLlmProvider implements LLMProvider {
       responsibilities: ['Build customer-facing payment flows'],
       soft_skills: [],
       certifications: ['AWS Certified Solutions Architect'],
-      knockout_requirements: [
-        { type: 'work_authorization', value: 'US work authorization required', evidence_quote: 'US work authorization required.' },
-      ],
       domain_keywords: ['payments', 'fintech'],
     };
   }

@@ -82,16 +82,6 @@ export class AnalysisService {
       preferred_skills: strs(e.preferred_skills),
       mentioned_skills: strs(e.mentioned_skills),
       certifications: strs(e.certifications),
-      knockout_requirements: Array.isArray(e.knockout_requirements)
-        ? e.knockout_requirements
-            .filter((k): k is Record<string, unknown> => !!k && typeof k === 'object')
-            .map((k) => ({
-              type: String(k.type ?? ''),
-              value: String(k.value ?? ''),
-              evidence_quote: String(k.evidence_quote ?? ''),
-            }))
-            .filter((k) => k.value)
-        : [],
     };
   }
 
@@ -207,12 +197,12 @@ export class AnalysisService {
     }
     this.events.emit(sessionId, 'gate_result', { gate: 'subtype', result: 'same' });
 
-    // Subtype matched → open the board and evaluate knockout requirements.
+    // Subtype matched → open the board.
     await this.transitions.apply(sessionId, 'ANALYSIS_NEEDS_CARDS', 'ANALYSIS_TO_BOARD');
     await this.evaluatePostSubtype(sessionId);
   }
 
-  // Knockout cards, evaluated once the subtype gate is cleared.
+  // Skill-gap cards, evaluated once the subtype gate is cleared.
   async evaluatePostSubtype(sessionId: string): Promise<void> {
     const session = await this.prisma.tailoringSession.findUniqueOrThrow({
       where: { id: sessionId },
@@ -225,26 +215,6 @@ export class AnalysisService {
     if (!analysisRow) return;
     const raw = analysisRow.raw as { analysis: unknown; extraction: unknown };
     const extraction = this.normalizeExtraction(raw.extraction);
-
-    const unresolved = this.gates.unresolvedKnockouts(
-      { workAuthorization: session.profile.workAuthorization },
-      extraction,
-    );
-    for (const k of unresolved) {
-      await this.cards.create(sessionId, 'knockout_requirement', 'critical', {
-        card_type: 'knockout_requirement',
-        title: `Requirement: ${k.value}`,
-        message: `The JD requires "${k.value}", which isn't confirmed on your profile.`,
-        options: [
-          { option_id: 'meet', label: 'I meet this requirement', consequence: 'Recorded as confirmed.' },
-          { option_id: 'dont_meet', label: "I don't meet it — continue anyway", consequence: 'Logged; the report raises the risk level.' },
-          { option_id: 'cancel', label: 'Cancel', consequence: 'Ends this session.' },
-        ],
-        recommended_option: null,
-        severity: 'critical',
-        context: { type: k.type, value: k.value, evidence_quote: k.evidence_quote },
-      });
-    }
 
     // ---- Skill gap cards (design Section 9) ----
     await this.createSkillCards(sessionId, session.profile, extraction);
@@ -274,7 +244,7 @@ export class AnalysisService {
       ? base.workExperience
       : [];
 
-    // How many cards already exist this session (knockout, etc.).
+    // How many cards already exist this session (subtype, etc.).
     const existing = await this.cards.listBySession(sessionId);
     let budget = CARD_BUDGET - existing.length;
 
