@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { api } from '@/lib/api-client';
 import { AUTH_CHANGED_EVENT, clearAuth, getStoredUser, type AuthUser } from '@/lib/auth';
@@ -25,6 +25,20 @@ export function Sidebar() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
+
+  // ChatGPT-style account popover: clicking anywhere else closes it.
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [accountMenuOpen]);
 
   useEffect(() => {
     setIsClient(true);
@@ -233,21 +247,44 @@ export function Sidebar() {
 
         <div className="sidebar-footer">
           {isClient && user ? (
-            <>
-              <div className="account-row" title={displayName}>
+            <div className="account" ref={accountRef}>
+              {accountMenuOpen && (
+                <div className="account-menu" role="menu">
+                  <button
+                    className="account-menu-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setAccountMenuOpen(false);
+                      handleNavigation('/settings');
+                    }}
+                  >
+                    ⚙ Settings
+                  </button>
+                  <div className="account-menu-divider" />
+                  <button
+                    className="account-menu-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setAccountMenuOpen(false);
+                      handleSignOut();
+                    }}
+                  >
+                    ↪ Sign out
+                  </button>
+                </div>
+              )}
+              <button
+                className={`account-row ${accountMenuOpen ? 'open' : ''}`}
+                title={displayName}
+                onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                aria-haspopup="menu"
+                aria-expanded={accountMenuOpen}
+              >
                 <span className="account-avatar">{displayName.charAt(0).toUpperCase()}</span>
                 <span className="account-name">{displayName}</span>
-              </div>
-              <button
-                className={`sidebar-nav-link ${pathname === '/settings' ? 'active' : ''}`}
-                onClick={() => handleNavigation('/settings')}
-              >
-                Settings
+                <span className="account-caret">⋯</span>
               </button>
-              <button className="sidebar-nav-link" onClick={handleSignOut}>
-                Sign out
-              </button>
-            </>
+            </div>
           ) : isClient ? (
             <div className="sidebar-auth-actions">
               <button className="auth-btn auth-btn-primary" onClick={() => handleNavigation('/auth/signup')}>
