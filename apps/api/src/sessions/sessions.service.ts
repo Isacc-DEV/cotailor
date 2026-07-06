@@ -129,6 +129,27 @@ export class SessionsService {
     return this.transitions.apply(id, 'CANCEL', 'SESSION_CANCELLED');
   }
 
+  // Hard delete. init.sql creates no DB foreign keys, so the schema's
+  // onDelete: Cascade never fires — children must be removed explicitly,
+  // leaf tables first (also the safe order on an FK-enabled database).
+  async remove(userId: string, id: string) {
+    await this.assertOwned(userId, id);
+    await this.prisma.$transaction([
+      this.prisma.exportFile.deleteMany({ where: { version: { sessionId: id } } }),
+      this.prisma.resumeVersion.deleteMany({ where: { sessionId: id } }),
+      this.prisma.generatedResume.deleteMany({ where: { sessionId: id } }),
+      this.prisma.chatMessage.deleteMany({ where: { sessionId: id } }),
+      this.prisma.userDecision.deleteMany({ where: { sessionId: id } }),
+      this.prisma.decisionCard.deleteMany({ where: { sessionId: id } }),
+      this.prisma.skillMatch.deleteMany({ where: { sessionId: id } }),
+      this.prisma.jdAnalysis.deleteMany({ where: { sessionId: id } }),
+      this.prisma.resumeStrategy.deleteMany({ where: { sessionId: id } }),
+      this.prisma.auditLog.deleteMany({ where: { sessionId: id } }),
+      this.prisma.tailoringSession.delete({ where: { id } }),
+    ]);
+    return { deleted: true };
+  }
+
   // APPROVE_STRATEGY is illegal before STRATEGY_REVIEW → 409 with allowed_actions.
   // Drives the full generation path: build the tailored resume (per-bullet
   // edits), persist it as a ResumeVersion, then validate → FINAL_READY.
