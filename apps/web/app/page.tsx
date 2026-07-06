@@ -1,53 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SESSION_STATES, CARD_TYPES, MATCH_TYPES } from '@cotailor/shared';
 import { Button } from '@/app/components/ui';
 import './page.css';
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-
 export default function Home() {
   const router = useRouter();
-  const [log, setLog] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
-  const add = (m: string) => setLog((l) => [...l, m]);
-
-  async function runDemo() {
-    setBusy(true);
-    setLog([]);
-    try {
-      const profile = await fetch(`${API}/api/v1/profiles`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          name: 'Backend Engineer - Node.js',
-          category: 'Software Engineering',
-          skills: ['Node.js', 'PostgreSQL', 'React', 'AWS', 'Docker'],
-        }),
-      }).then((r) => r.json());
-      add(`✓ profile created: ${profile.id}`);
-
-      const session = await fetch(`${API}/api/v1/sessions`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ profile_id: profile.id }),
-      }).then((r) => r.json());
-      add(`✓ session created: ${session.id} - state=${session.state}`);
-
-      const gen = await fetch(`${API}/api/v1/sessions/${session.id}/generate`, { method: 'POST' });
-      const genBody = await gen.json();
-      add(`✓ generate blocked as designed > HTTP ${gen.status}: ${genBody.error} (allowed: ${(genBody.allowed_actions || []).join(', ') || 'n/a'})`);
-
-      const cancel = await fetch(`${API}/api/v1/sessions/${session.id}/cancel`, { method: 'POST' }).then((r) => r.json());
-      add(`✓ cancelled - state=${cancel.state}`);
-    } catch (e) {
-      add(`✗ ${(e as Error).message} - is the API + Postgres running? (docker compose up -d, then pnpm dev)`);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <main className="landing-page">
@@ -164,25 +123,6 @@ export default function Home() {
         </Button>
       </section>
 
-      <section className="demo-section">
-        <h2>Developer Demo: State Machine</h2>
-        <p>Click below to test the backend state machine (creates a profile and session, confirms gates work):</p>
-
-        <Button
-          variant="secondary"
-          size="lg"
-          onClick={runDemo}
-          loading={busy}
-          disabled={busy}
-          style={{ marginBottom: '1rem' }}
-        >
-          Run State Machine Demo
-        </Button>
-
-        <div className="demo-output">
-          {log.length ? log.join('\n') : '// Click button to run demo...'}
-        </div>
-      </section>
     </main>
   );
 }

@@ -194,6 +194,13 @@ export const api = {
       });
     },
 
+    answerCard: async (sessionId: string, cardId: string, optionId: string, note?: string) => {
+      return request<any>(`/sessions/${sessionId}/cards/${cardId}/answer`, {
+        method: 'POST',
+        body: JSON.stringify({ option_id: optionId, ...(note ? { note } : {}) }),
+      });
+    },
+
     getStrategy: async (sessionId: string) => {
       return request<any>(`/sessions/${sessionId}/strategy`);
     },
@@ -204,8 +211,35 @@ export const api = {
       });
     },
 
+    // Generation and first-read resume builds run several LLM calls — allow
+    // well beyond the default 30s request timeout.
+    generate: async (sessionId: string) => {
+      return request<any>(`/sessions/${sessionId}/generate`, {
+        method: 'POST',
+        timeout: 180000,
+      });
+    },
+
     getResume: async (sessionId: string) => {
-      return request<any>(`/sessions/${sessionId}/resume`);
+      return request<any>(`/sessions/${sessionId}/resume`, { timeout: 180000 });
+    },
+
+    saveResume: async (sessionId: string, content: Record<string, unknown>) => {
+      return request<any>(`/sessions/${sessionId}/resume`, {
+        method: 'PUT',
+        body: JSON.stringify(content),
+      });
+    },
+
+    fixBullet: async (
+      sessionId: string,
+      body: { text: string; instruction: string; avoid_openers?: string[] },
+    ) => {
+      return request<{ text: string; verified?: boolean }>(`/sessions/${sessionId}/resume/fix-bullet`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+        timeout: 90000,
+      });
     },
 
     exportResume: async (sessionId: string, format: 'docx' | 'pdf' | 'json') => {

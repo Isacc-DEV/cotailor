@@ -4,9 +4,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { Button, Spinner, Badge } from '@/app/components/ui';
 import { formatDateRange } from '@/app/lib/date-format';
+import { api } from '@/lib/api-client';
 import './page.css';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 interface Bullet {
   text: string;
@@ -92,32 +91,22 @@ export default function ResumePreview() {
 
   const load = useCallback(async () => {
     if (!sessionId) return;
-    const res = await fetch(`${API}/sessions/${sessionId}/resume`);
-    if (!res.ok) throw new Error(`Failed to load resume (${res.status})`);
-    setResume(await res.json());
+    setResume(await api.sessions.getResume(sessionId));
   }, [sessionId]);
 
   useEffect(() => {
     if (!sessionId) {
-      router.push('/profile-selector');
+      router.push('/jd-input');
       return;
     }
-    load().catch((e) => setError(e instanceof Error ? e.message : 'Error'));
+    load().catch((e) => setError(e instanceof Error ? e.message : 'Failed to load resume'));
   }, [sessionId, load, router]);
 
   // Persist edited content as a new version; server responds with fresh lint.
   const save = async (updated: Resume) => {
+    if (!sessionId) return;
     const { qualityReport: _drop, ...content } = updated;
-    const res = await fetch(`${API}/sessions/${sessionId}/resume`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(content),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.message || `Failed to save (${res.status})`);
-    }
-    setResume(await res.json());
+    setResume(await api.sessions.saveResume(sessionId, content));
   };
 
   const withBusy = async (key: string, fn: () => Promise<void>) => {
@@ -236,16 +225,12 @@ export default function ResumePreview() {
         ),
       );
 
-      const res = await fetch(`${API}/sessions/${sessionId}/resume/fix-bullet`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, instruction: fixInstruction(issue), avoid_openers: avoidOpeners }),
+      if (!sessionId) return;
+      const { text: suggestion, verified } = await api.sessions.fixBullet(sessionId, {
+        text,
+        instruction: fixInstruction(issue),
+        avoid_openers: avoidOpeners,
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || `Fix failed (${res.status})`);
-      }
-      const { text: suggestion, verified } = await res.json();
       startEdit(target.expIndex, target.bulletIndex, suggestion, true, verified !== false);
     });
 
@@ -275,9 +260,24 @@ export default function ResumePreview() {
     window.print();
   };
 
-  if (!sessionId) return <Spinner text="Redirecting..." />;
-  if (error && !resume) return <div className="resume-preview"><div className="error-message">{error}</div></div>;
-  if (!resume) return <Spinner text="Building your tailored resume..." />;
+  if (!sessionId) return null;
+  if (error && !resume) {
+    return (
+      <div className="resume-preview">
+        <div className="error-message">{error}</div>
+        <Button variant="primary" onClick={() => { setError(null); load().catch((e) => setError(e instanceof Error ? e.message : 'Failed to load resume')); }}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
+  if (!resume) {
+    return (
+      <div className="resume-preview resume-preview-loading">
+        <Spinner text="Building your tailored resume..." />
+      </div>
+    );
+  }
 
   const h = resume.header || {};
   const qr = resume.qualityReport;

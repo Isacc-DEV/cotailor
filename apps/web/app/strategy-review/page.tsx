@@ -3,9 +3,8 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { Button, Spinner, Badge } from '@/app/components/ui';
+import { api } from '@/lib/api-client';
 import './page.css';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 interface PlanItem {
   card_type: string;
@@ -40,17 +39,15 @@ export default function StrategyReview() {
 
   const load = useCallback(async () => {
     if (!sessionId) return;
-    const res = await fetch(`${API}/sessions/${sessionId}/strategy`);
-    if (!res.ok) throw new Error(`Failed to load strategy (${res.status})`);
-    setStrategy(await res.json());
+    setStrategy(await api.sessions.getStrategy(sessionId));
   }, [sessionId]);
 
   useEffect(() => {
     if (!sessionId) {
-      router.push('/profile-selector');
+      router.push('/jd-input');
       return;
     }
-    load().catch((e) => setError(e instanceof Error ? e.message : 'Error'));
+    load().catch((e) => setError(e instanceof Error ? e.message : 'Failed to load strategy'));
   }, [sessionId, load, router]);
 
   const generate = async () => {
@@ -58,11 +55,7 @@ export default function StrategyReview() {
     setGenerating(true);
     setError(null);
     try {
-      const res = await fetch(`${API}/sessions/${sessionId}/generate`, { method: 'POST' });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || `Failed to generate (${res.status})`);
-      }
+      await api.sessions.generate(sessionId);
       router.push(`/resume-preview?sessionId=${sessionId}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to generate');
@@ -70,8 +63,39 @@ export default function StrategyReview() {
     }
   };
 
-  if (!sessionId) return <Spinner text="Redirecting..." />;
-  if (!strategy) return <Spinner text="Loading strategy..." />;
+  if (!sessionId) return null;
+
+  if (!strategy) {
+    return (
+      <div className="strategy-review">
+        <div className="strategy-loading">
+          {error ? (
+            <div className="strategy-error">
+              <div className="strategy-error-icon">!</div>
+              <h2>Couldn&apos;t load the strategy</h2>
+              <div className="strategy-error-detail">{error}</div>
+              <div className="strategy-error-actions">
+                <Button variant="secondary" onClick={() => router.push(`/decision-board?sessionId=${sessionId}`)}>
+                  Back to Decisions
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setError(null);
+                    load().catch((e) => setError(e instanceof Error ? e.message : 'Failed to load strategy'));
+                  }}
+                >
+                  Retry
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Spinner text="Loading strategy..." />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="strategy-review">

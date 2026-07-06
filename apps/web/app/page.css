@@ -250,43 +250,6 @@
   min-width: 240px;
 }
 
-/* Demo Section */
-.demo-section {
-  max-width: 100%;
-  margin: 0;
-  padding: 40px 24px;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.demo-section h2 {
-  font-size: 1.5rem;
-  margin-bottom: 12px;
-  color: var(--text-primary);
-  font-weight: 700;
-}
-
-.demo-section p {
-  color: var(--text-secondary);
-  margin-bottom: 16px;
-  font-size: 0.95rem;
-}
-
-.demo-output {
-  background: var(--card-bg);
-  color: var(--text-secondary);
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  line-height: 1.6;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  min-height: 100px;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .hero {
@@ -322,8 +285,7 @@
 
   .features,
   .how-it-works,
-  .cta,
-  .demo-section {
+  .cta {
     padding: 32px 24px;
   }
 

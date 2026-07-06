@@ -3,9 +3,9 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { Button, Spinner, Badge } from '@/app/components/ui';
+import { LoadingScreen } from '@/app/components/screens/LoadingScreen';
+import { api } from '@/lib/api-client';
 import './page.css';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 interface CardOption {
   option_id: string;
@@ -29,6 +29,8 @@ interface Session {
   id: string;
   state: string;
   cards: Card[];
+  // Set by the backend when the background analysis job died (e.g. LLM 429).
+  analysisError?: string;
 }
 
 const SEVERITY_VARIANT: Record<string, 'default' | 'warning' | 'error' | 'success'> = {
@@ -49,9 +51,7 @@ export default function DecisionBoard() {
 
   const fetchSession = useCallback(async () => {
     if (!sessionId) return null;
-    const res = await fetch(`${API}/sessions/${sessionId}`);
-    if (!res.ok) throw new Error(`Failed to load session (${res.status})`);
-    const data: Session = await res.json();
+    const data: Session = await api.sessions.get(sessionId);
     setSession(data);
     return data;
   }, [sessionId]);
@@ -59,26 +59,31 @@ export default function DecisionBoard() {
   // Initial load + poll while analysis is still running.
   useEffect(() => {
     if (!sessionId) {
-      router.push('/profile-selector');
+      router.push('/jd-input');
       return;
     }
     let timer: ReturnType<typeof setTimeout>;
     let cancelled = false;
     let attempts = 0;
-    const MAX_ATTEMPTS = 20; // ~24s
+    const MAX_ATTEMPTS = 60; // ~90s safety net; real failures surface via analysisError
+    const INTERVAL_MS = 1500;
 
     const tick = async () => {
       try {
         const data = await fetchSession();
-        if (!cancelled && data && (data.state === 'ANALYZING' || data.state === 'JD_SUBMITTED')) {
+        if (cancelled || !data) return;
+        // The backend recorded a failure from the LLM provider — stop polling and show it.
+        if (data.analysisError) {
+          setError(data.analysisError);
+          return;
+        }
+        if (data.state === 'ANALYZING' || data.state === 'JD_SUBMITTED') {
           attempts += 1;
           if (attempts >= MAX_ATTEMPTS) {
-            setError(
-              'Analysis is taking too long or failed. If you are using Gemini, check your API key/model, then try submitting the job description again.',
-            );
+            setError('Analysis is taking much longer than expected. Please try submitting the job description again.');
             return;
           }
-          timer = setTimeout(tick, 1200);
+          timer = setTimeout(tick, INTERVAL_MS);
         }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Error loading session');
@@ -103,15 +108,7 @@ export default function DecisionBoard() {
     setAnswering(cardId);
     setError(null);
     try {
-      const res = await fetch(`${API}/sessions/${sessionId}/cards/${cardId}/answer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ option_id: optionId }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || `Failed to answer (${res.status})`);
-      }
+      await api.sessions.answerCard(sessionId, cardId, optionId);
       await fetchSession();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to answer');
@@ -120,30 +117,55 @@ export default function DecisionBoard() {
     }
   };
 
-  if (!sessionId) return <Spinner text="Redirecting..." />;
-  if (!session) return <Spinner text="Loading decisions..." />;
+  const analysisFailedScreen = (message: string) => (
+    <div className="decision-board">
+      <div className="all-answered">
+        <div className="success-icon error-icon">!</div>
+        <h2>Analysis failed</h2>
+        <p>Something went wrong while analyzing the job description:</p>
+        <div className="error-detail">{message}</div>
+        <p className="error-hint">
+          If this mentions a rate limit or quota (e.g. 429), wait a moment or check the LLM provider&apos;s API key, then try again.
+        </p>
+        <div className="board-error-actions">
+          <Button variant="primary" onClick={() => router.push(`/jd-input?sessionId=${sessionId}`)}>
+            Try Again
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!sessionId) return null;
+
+  if (!session) {
+    return (
+      <div className="decision-board">
+        <div className="board-loading">
+          {error ? (
+            <div className="all-answered">
+              <div className="success-icon error-icon">!</div>
+              <h2>Couldn&apos;t load this session</h2>
+              <div className="error-detail">{error}</div>
+              <div className="board-error-actions">
+                <Button variant="primary" onClick={() => router.push('/jd-input')}>
+                  Start a New Session
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Spinner text="Loading decisions..." />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const { state, cards } = session;
 
   if (state === 'ANALYZING' || state === 'JD_SUBMITTED') {
-    return (
-      <div className="decision-board">
-        {error ? (
-          <div className="all-answered">
-            <div className="success-icon" style={{ background: 'var(--error-bg)', color: 'var(--error)' }}>
-              !
-            </div>
-            <h2>Analysis didn't finish</h2>
-            <p>{error}</p>
-            <Button variant="primary" onClick={() => router.push(`/jd-input?sessionId=${sessionId}`)}>
-              Try Again
-            </Button>
-          </div>
-        ) : (
-          <Spinner text="Analyzing the job description..." />
-        )}
-      </div>
-    );
+    if (error) return analysisFailedScreen(error);
+    return <LoadingScreen phase="analyzing" />;
   }
 
   if (state === 'CATEGORY_REJECTED') {
@@ -151,9 +173,7 @@ export default function DecisionBoard() {
     return (
       <div className="decision-board">
         <div className="all-answered">
-          <div className="success-icon" style={{ background: 'var(--error-bg)', color: 'var(--error)' }}>
-            ✕
-          </div>
+          <div className="success-icon error-icon">✕</div>
           <h2>{card?.payload.title || "This job doesn't match your profile"}</h2>
           <p>{card?.payload.message}</p>
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '1rem' }}>

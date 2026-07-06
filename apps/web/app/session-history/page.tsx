@@ -4,9 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Button, Badge, Spinner, Card } from '@/app/components/ui';
 import { routeForState } from '@/app/lib/session-routes';
+import { api } from '@/lib/api-client';
 import './page.css';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 interface Session {
   id: string;
@@ -39,9 +38,7 @@ export default function SessionHistory() {
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const res = await fetch(`${API}/sessions`);
-        if (!res.ok) throw new Error(`Failed to load sessions (${res.status})`);
-        const data = await res.json();
+        const data = await api.sessions.list();
         setSessions(
           (Array.isArray(data) ? data : []).map((s: any) => ({
             id: s.id,
