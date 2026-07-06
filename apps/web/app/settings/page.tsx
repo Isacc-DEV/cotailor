@@ -220,7 +220,7 @@ export default function Settings() {
       <div className="settings-actions">
         <Button
           variant="primary"
-          size="lg"
+          size="md"
           onClick={handleSave}
           disabled={loading}
           loading={loading}
@@ -229,7 +229,7 @@ export default function Settings() {
         </Button>
         <Button
           variant="secondary"
-          size="lg"
+          size="md"
           onClick={handleReset}
           disabled={loading}
         >
@@ -237,7 +237,7 @@ export default function Settings() {
         </Button>
         <Button
           variant="secondary"
-          size="lg"
+          size="md"
           onClick={() => router.push('/profile-selector')}
           disabled={loading}
         >
