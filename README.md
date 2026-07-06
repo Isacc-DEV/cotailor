@@ -62,22 +62,71 @@ cotailor/
 
 ### Prerequisites
 - Node.js 20+
-- pnpm 11.9.0+
-- PostgreSQL 16
+- pnpm 9+ (`corepack enable` gives you the pinned version automatically)
+- Docker Desktop (for PostgreSQL 16 — or bring your own Postgres, see below)
 
 ### Installation
 
 ```bash
 git clone https://github.com/c-vando/cotailor.git
 cd cotailor
+
+# 1. Install dependencies
 pnpm install
-pnpm run prisma:generate
+
+# 2. Create the API env file (defaults work as-is with the Docker database)
+cp apps/api/.env.example apps/api/.env
+
+# 3. Start Postgres, generate the Prisma client, apply the schema — one command
+pnpm run setup
+
+# 4. Run everything (web + api in watch mode)
 pnpm dev
 ```
 
 **URLs:**
 - Web: http://localhost:3000
-- API: http://localhost:3001
+- API: http://localhost:3001 (health check: `curl http://localhost:3001/health`)
+
+There's no seed data — sign up in the web UI, create a profile, and start a session.
+The default `LLM_PROVIDER="stub"` needs **no API key** (instant mock responses); switch
+to `gemini` or `openai` in `apps/api/.env` when you want real analysis, and restart
+`pnpm dev` afterwards (env is only read at startup).
+
+### Using your own Postgres (no Docker)
+
+Point `DATABASE_URL` in `apps/api/.env` at your server, then instead of `pnpm run setup`:
+
+```bash
+pnpm run prisma:generate
+pnpm run db:push        # applies prisma/schema.prisma directly (no migrations needed)
+```
+
+### Schema notes (read before touching the DB)
+
+- **`prisma db push` is the source of truth path** — it syncs the database to
+  `apps/api/prisma/schema.prisma`. There is no `migrations/` history in this repo.
+- `apps/api/prisma/init.sql` is a **fallback** for machines where Prisma's native
+  schema engine crashes (SIGILL on some CPUs). It must be kept manually in sync with
+  `schema.prisma` — drift between them causes runtime errors like
+  `Null constraint violation on the (not available)`. Apply it without a local psql via:
+  ```bash
+  # PowerShell
+  Get-Content apps/api/prisma/init.sql -Raw | docker exec -i cotailor-postgres psql -U cotailor -d cotailor
+  # bash
+  docker exec -i cotailor-postgres psql -U cotailor -d cotailor < apps/api/prisma/init.sql
+  ```
+  ⚠️ `init.sql` drops and recreates the whole schema — it wipes all data.
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| `Environment variable not found: DATABASE_URL` | You skipped step 2 — create `apps/api/.env` from the example. |
+| API starts but every request fails / frontend stuck loading | Postgres isn't running (`pnpm run db:up`) or the schema was never applied (`pnpm run db:push`). |
+| Changed `.env` but nothing happened | Restart `pnpm dev` — env is read once at startup. |
+| `Null constraint violation on the (not available)` | Your DB drifted from `schema.prisma` (usually an old `init.sql` init). Run `pnpm run db:push`. |
+| Prisma CLI crashes with SIGILL | Your CPU can't run the native engine — use the `init.sql` fallback above. The app itself is unaffected (it uses the pure-JS pg driver). |
 
 ## 🔐 Security
 
