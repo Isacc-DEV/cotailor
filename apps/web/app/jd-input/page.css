@@ -42,6 +42,156 @@
   gap: 20px;
 }
 
+/* Profile pill — compact picker above the composer, like ChatGPT's model selector */
+.profile-picker {
+  position: relative;
+  align-self: flex-start;
+}
+
+.profile-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.profile-pill:hover:not(:disabled) {
+  background: var(--card-hover-bg);
+  border-color: var(--border-light);
+}
+
+.profile-pill:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pill-prefix {
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.pill-name {
+  color: var(--text-primary);
+  font-weight: 600;
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pill-caret {
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
+}
+
+.profile-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 280px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  z-index: 30;
+}
+
+.profile-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  transition: background-color 0.15s ease;
+}
+
+.profile-option:hover {
+  background: var(--bg-tertiary);
+}
+
+.option-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.option-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.option-category {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.option-check {
+  flex-shrink: 0;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.profile-menu-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 6px 4px;
+}
+
+.profile-option.menu-action {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.profile-option.menu-action:hover {
+  color: var(--text-primary);
+}
+
+/* Shown when the account has no profiles yet */
+.jd-empty-profiles {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  padding: 80px 24px;
+}
+
+.jd-empty-profiles h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.jd-empty-profiles p {
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+  max-width: 420px;
+}
+
 .jd-input-group {
   position: relative;
   display: flex;

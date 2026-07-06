@@ -178,8 +178,8 @@ export function Sidebar() {
 
         {isClient && user && (
           <nav className="sidebar-nav">
-            {/* Selecting a profile IS step one of a new session, so this lands on the profile selector. */}
-            <button className="sidebar-nav-link nav-new-session" onClick={() => handleNavigation('/profile-selector')}>
+            {/* Straight to the composer — profile choice is a pill on that page. */}
+            <button className="sidebar-nav-link nav-new-session" onClick={() => handleNavigation('/jd-input')}>
               <span className="nav-icon">+</span> New session
             </button>
           </nav>

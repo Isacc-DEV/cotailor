@@ -1,11 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Spinner } from '@/app/components/ui';
+import { api } from '@/lib/api-client';
+import { getToken } from '@/lib/auth';
 import './page.css';
 
 const MAX_CHARS = 15000;
+const LAST_PROFILE_KEY = 'last_profile_id';
+
+interface ProfileOption {
+  id: string;
+  name: string;
+  category?: string;
+}
 
 export default function JDInput() {
   const router = useRouter();
@@ -18,13 +27,68 @@ export default function JDInput() {
   const [isClient, setIsClient] = useState(false);
   const [charCount, setCharCount] = useState(0);
 
+  const [profiles, setProfiles] = useState<ProfileOption[]>([]);
+  const [profilesLoading, setProfilesLoading] = useState(true);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  // A session that arrived via ?sessionId= and is still fresh enough to accept a JD.
+  const [reusableSession, setReusableSession] = useState<{ id: string; profileId: string } | null>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setIsClient(true);
-    const authToken = localStorage.getItem('auth_token');
-    if (!authToken) {
+    if (!getToken()) {
       router.push('/auth/signin');
+      return;
     }
-  }, [router]);
+
+    let stale = false;
+    (async () => {
+      try {
+        setProfilesLoading(true);
+        const [list, session] = await Promise.all([
+          api.profiles.list(),
+          sessionId ? api.sessions.get(sessionId).catch(() => null) : Promise.resolve(null),
+        ]);
+        if (stale) return;
+
+        setProfiles(list);
+        // A session can only accept a JD while in CREATED; otherwise we start fresh.
+        if (session && session.state === 'CREATED' && session.profileId) {
+          setReusableSession({ id: session.id, profileId: session.profileId });
+        }
+
+        const lastUsed = typeof window !== 'undefined' ? localStorage.getItem(LAST_PROFILE_KEY) : null;
+        const preferred =
+          (session?.profileId && list.find((p: ProfileOption) => p.id === session.profileId)?.id) ||
+          (lastUsed && list.find((p: ProfileOption) => p.id === lastUsed)?.id) ||
+          list[0]?.id ||
+          null;
+        setSelectedProfileId(preferred);
+      } catch (err) {
+        if (!stale) setError(err instanceof Error ? err.message : 'Failed to load profiles');
+      } finally {
+        if (!stale) setProfilesLoading(false);
+      }
+    })();
+
+    return () => {
+      stale = true;
+    };
+  }, [router, sessionId]);
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [pickerOpen]);
+
+  const selectedProfile = profiles.find((p) => p.id === selectedProfileId) ?? null;
 
   const handleJDChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
@@ -37,6 +101,11 @@ export default function JDInput() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!selectedProfileId) {
+      setError('Select a profile first');
+      return;
+    }
 
     if (!jdText.trim()) {
       setError('Please paste a job description');
@@ -51,59 +120,20 @@ export default function JDInput() {
     setLoading(true);
 
     try {
-      const API = 'http://localhost:3001/api/v1';
+      // Reuse the fresh session only if the user kept its profile; otherwise create a new one.
+      let currentSessionId =
+        reusableSession && reusableSession.profileId === selectedProfileId ? reusableSession.id : null;
 
-      // Figure out which profile to use. If we arrived with an existing session,
-      // reuse its profile (and reuse the session only if it's still fresh).
-      let profileId: string | null = null;
-      let reusableSessionId: string | null = null;
-
-      if (sessionId) {
-        const sRes = await fetch(`${API}/sessions/${sessionId}`);
-        if (sRes.ok) {
-          const s = await sRes.json();
-          profileId = s.profileId ?? null;
-          // A session can only accept a JD while in CREATED; otherwise start fresh.
-          if (s.state === 'CREATED') reusableSessionId = s.id;
-        }
-      }
-
-      // Fall back to the first profile if we don't have one yet.
-      if (!profileId) {
-        const profileRes = await fetch(`${API}/profiles`);
-        if (!profileRes.ok) throw new Error('No profiles found. Please create a profile first.');
-        const profiles = await profileRes.json();
-        if (!profiles.length) throw new Error('No profiles found. Please create a profile first.');
-        profileId = profiles[0].id;
-      }
-
-      // Reuse the fresh session, or create a new one.
-      let currentSessionId = reusableSessionId;
       if (!currentSessionId) {
-        const sessionRes = await fetch(`${API}/sessions`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ profile_id: profileId }),
-        });
-        if (!sessionRes.ok) throw new Error('Failed to create session');
-        const newSession = await sessionRes.json();
-        currentSessionId = newSession.id || newSession.data?.id;
+        const session = await api.sessions.create(selectedProfileId);
+        currentSessionId = session?.id ?? null;
       }
 
       if (!currentSessionId) throw new Error('Could not start a session');
 
-      // Submit JD
-      const response = await fetch(`${API}/sessions/${currentSessionId}/jd`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: jdText }),
-      });
+      localStorage.setItem(LAST_PROFILE_KEY, selectedProfileId);
 
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.message || `Failed to analyze job description (${response.status})`);
-      }
-
+      await api.sessions.submitJD(currentSessionId, jdText);
       router.push(`/decision-board?sessionId=${currentSessionId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -116,15 +146,79 @@ export default function JDInput() {
     return <Spinner text="Loading..." />;
   }
 
+  if (!profilesLoading && profiles.length === 0) {
+    return (
+      <div className="jd-input-container">
+        <div className="jd-input-main">
+          <div className="jd-empty-profiles">
+            <h1>Create a profile to get started</h1>
+            <p>Your profile holds the verified experience and skills every resume is built from.</p>
+            <Button variant="primary" size="lg" onClick={() => router.push('/create-profile')}>
+              Create Profile
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="jd-input-container">
       <div className="jd-input-main">
         <div className="jd-input-header">
-          <h1>Paste Job Description</h1>
-          <p>We'll analyze it and match it to your profile</p>
+          <h1>Tailor a resume</h1>
+          <p>Paste a job description and we&apos;ll check the fit before writing a word</p>
         </div>
 
         <form onSubmit={handleSubmit} className="jd-input-form">
+          <div className="profile-picker" ref={pickerRef}>
+            <button
+              type="button"
+              className="profile-pill"
+              onClick={() => setPickerOpen(!pickerOpen)}
+              disabled={loading || profilesLoading}
+              aria-haspopup="listbox"
+              aria-expanded={pickerOpen}
+            >
+              <span className="pill-prefix">Profile</span>
+              <span className="pill-name">
+                {profilesLoading ? 'Loading…' : selectedProfile ? selectedProfile.name : 'Select profile'}
+              </span>
+              <span className="pill-caret">▾</span>
+            </button>
+
+            {pickerOpen && (
+              <div className="profile-menu" role="listbox">
+                {profiles.map((profile) => (
+                  <button
+                    key={profile.id}
+                    type="button"
+                    role="option"
+                    aria-selected={profile.id === selectedProfileId}
+                    className={`profile-option ${profile.id === selectedProfileId ? 'selected' : ''}`}
+                    onClick={() => {
+                      setSelectedProfileId(profile.id);
+                      setPickerOpen(false);
+                    }}
+                  >
+                    <span className="option-main">
+                      <span className="option-name">{profile.name}</span>
+                      {profile.category && <span className="option-category">{profile.category}</span>}
+                    </span>
+                    {profile.id === selectedProfileId && <span className="option-check">✓</span>}
+                  </button>
+                ))}
+                <div className="profile-menu-divider" />
+                <button type="button" className="profile-option menu-action" onClick={() => router.push('/create-profile')}>
+                  + New profile
+                </button>
+                <button type="button" className="profile-option menu-action" onClick={() => router.push('/profile-selector')}>
+                  Manage profiles
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="jd-input-group">
             <textarea
               value={jdText}
@@ -146,7 +240,7 @@ export default function JDInput() {
               type="submit"
               variant="primary"
               size="lg"
-              disabled={loading || !jdText.trim()}
+              disabled={loading || !jdText.trim() || !selectedProfileId}
               loading={loading}
             >
               {loading ? 'Analyzing...' : 'Analyze & Continue'}

@@ -147,8 +147,8 @@ export default function ProfileSelector() {
       <div className="profile-header">
         <div className="header-top">
           <div>
-            <h1>Select Your Profile</h1>
-            <p>Choose a saved resume profile to tailor for this job</p>
+            <h1>Profiles</h1>
+            <p>Create, edit, or pick a profile to start a session with</p>
           </div>
         </div>
       </div>
