@@ -1,6 +1,12 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { JdAnalysis, SkillExtraction } from '@cotailor/shared';
-import { classifySkill, findRelevantBullet, isSpecificSkill } from '@cotailor/shared';
+import {
+  classifySkill,
+  findRelevantBullet,
+  isSpecificSkill,
+  jdAnalysisSchema,
+  skillExtractionSchema,
+} from '@cotailor/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { LLM_PROVIDER, type LLMProvider } from '../llm/llm-provider.interface';
 import { GatesService } from '../core/gates.service';
@@ -29,6 +35,66 @@ export class AnalysisService {
     private readonly events: EventsService,
   ) {}
 
+  // LLM JSON is untrusted: despite the prompt contract, models occasionally
+  // return null or drop a field, and JdAnalysis columns are NOT NULL — that
+  // crashes the insert with an unhelpful "Null constraint violation". Validate
+  // against the shared schema; on mismatch coerce safe defaults so a sloppy
+  // response degrades into the low-confidence flow instead of a crash.
+  private normalizeAnalysis(raw: unknown): JdAnalysis {
+    const parsed = jdAnalysisSchema.safeParse(raw);
+    if (parsed.success) return parsed.data;
+
+    const a = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    const str = (v: unknown, fallback: string) => (typeof v === 'string' && v.trim() ? v.trim() : fallback);
+    const num01 = (v: unknown) =>
+      typeof v === 'number' && Number.isFinite(v) ? Math.min(Math.max(v, 0), 1) : 0;
+    const strs = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+
+    const bad = parsed.error.issues.map((i) => i.path.join('.')).join(', ');
+    this.logger.warn(`analyzeJD response failed schema validation (fields: ${bad}); coercing safe defaults.`);
+
+    const category = str(a.category, 'Unknown');
+    return {
+      is_job_description: a.is_job_description !== false,
+      category,
+      category_confidence: num01(a.category_confidence),
+      subtype: str(a.subtype, category),
+      subtype_confidence: num01(a.subtype_confidence),
+      domain_keywords: strs(a.domain_keywords),
+      summary: str(a.summary, ''),
+      language: str(a.language, 'en'),
+      red_flags: strs(a.red_flags),
+    };
+  }
+
+  private normalizeExtraction(raw: unknown): SkillExtraction {
+    const parsed = skillExtractionSchema.safeParse(raw);
+    if (parsed.success) return parsed.data;
+
+    const e = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    const strs = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+
+    const bad = parsed.error.issues.map((i) => i.path.join('.')).join(', ');
+    this.logger.warn(`extractSkills response failed schema validation (fields: ${bad}); coercing safe defaults.`);
+
+    return {
+      required_skills: strs(e.required_skills),
+      preferred_skills: strs(e.preferred_skills),
+      mentioned_skills: strs(e.mentioned_skills),
+      certifications: strs(e.certifications),
+      knockout_requirements: Array.isArray(e.knockout_requirements)
+        ? e.knockout_requirements
+            .filter((k): k is Record<string, unknown> => !!k && typeof k === 'object')
+            .map((k) => ({
+              type: String(k.type ?? ''),
+              value: String(k.value ?? ''),
+              evidence_quote: String(k.evidence_quote ?? ''),
+            }))
+            .filter((k) => k.value)
+        : [],
+    };
+  }
+
   async run(sessionId: string, opts: RunOpts = {}): Promise<void> {
     const session = await this.prisma.tailoringSession.findUniqueOrThrow({
       where: { id: sessionId },
@@ -46,12 +112,12 @@ export class AnalysisService {
     let analysis: JdAnalysis;
     let extraction: SkillExtraction;
     if (analysisRow) {
-      const raw = analysisRow.raw as { analysis: JdAnalysis; extraction: SkillExtraction };
-      analysis = raw.analysis;
-      extraction = raw.extraction;
+      const raw = analysisRow.raw as { analysis: unknown; extraction: unknown };
+      analysis = this.normalizeAnalysis(raw.analysis);
+      extraction = this.normalizeExtraction(raw.extraction);
     } else {
-      analysis = await this.llm.analyzeJD(jdText);
-      extraction = await this.llm.extractSkills(jdText);
+      analysis = this.normalizeAnalysis(await this.llm.analyzeJD(jdText));
+      extraction = this.normalizeExtraction(await this.llm.extractSkills(jdText));
       await this.prisma.jdAnalysis.create({
         data: {
           sessionId,
@@ -157,8 +223,8 @@ export class AnalysisService {
       orderBy: { createdAt: 'desc' },
     });
     if (!analysisRow) return;
-    const raw = analysisRow.raw as { analysis: JdAnalysis; extraction: SkillExtraction };
-    const extraction = raw.extraction;
+    const raw = analysisRow.raw as { analysis: unknown; extraction: unknown };
+    const extraction = this.normalizeExtraction(raw.extraction);
 
     const unresolved = this.gates.unresolvedKnockouts(
       { workAuthorization: session.profile.workAuthorization },

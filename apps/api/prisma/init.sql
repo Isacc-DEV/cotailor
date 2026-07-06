@@ -83,7 +83,6 @@ CREATE TABLE "JdAnalysis" (
   "id" TEXT NOT NULL, "sessionId" TEXT NOT NULL, "jdDocumentId" TEXT NOT NULL,
   "category" TEXT NOT NULL, "categoryConfidence" DOUBLE PRECISION NOT NULL,
   "subtype" TEXT NOT NULL, "subtypeConfidence" DOUBLE PRECISION NOT NULL,
-  "seniority" TEXT NOT NULL,
   "domainKeywords" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
   "summary" TEXT NOT NULL, "raw" JSONB NOT NULL,
   "promptVersion" TEXT, "modelUsed" TEXT,

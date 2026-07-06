@@ -57,7 +57,35 @@ export class SessionsService {
   async get(id: string) {
     const s = await this.prisma.tailoringSession.findUnique({ where: { id }, include: { cards: true } });
     if (!s) throw new NotFoundException({ error: 'not_found', message: 'Session not found' });
+
+    // Analysis runs fire-and-forget, so a provider failure leaves the session
+    // parked in ANALYZING with pollers spinning. Surface the recorded failure —
+    // unless a later event restarted analysis, which supersedes it.
+    if (s.state === 'JD_SUBMITTED' || s.state === 'ANALYZING') {
+      const latest = await this.prisma.auditLog.findFirst({
+        where: {
+          sessionId: id,
+          eventType: { in: ['ANALYSIS_FAILED', 'ANALYSIS_STARTED', 'CATEGORY_CONFIRMED', 'SUBTYPE_CONFIRMED'] },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (latest?.eventType === 'ANALYSIS_FAILED') {
+        const message = (latest.payload as { message?: string } | null)?.message;
+        return { ...s, analysisError: message || 'Analysis failed unexpectedly.' };
+      }
+    }
     return s;
+  }
+
+  // Analysis failures must outlive the request: log, broadcast (SSE), and
+  // persist to the audit log so session polling can report what went wrong.
+  private async recordAnalysisFailure(sessionId: string, e: unknown): Promise<void> {
+    const message = e instanceof Error ? e.message : String(e);
+    this.logger.error(`analysis.run failed for session ${sessionId}: ${message}`, e instanceof Error ? e.stack : undefined);
+    this.events.emit(sessionId, 'error', { message });
+    await this.prisma.auditLog
+      .create({ data: { sessionId, eventType: 'ANALYSIS_FAILED', payload: { message } as never } })
+      .catch(() => undefined);
   }
 
   async getOwned(userId: string, id: string) {
@@ -305,10 +333,7 @@ export class SessionsService {
     await this.transitions.apply(id, 'START_ANALYSIS', 'ANALYSIS_STARTED');
 
     // fire-and-forget analysis job (in-process for now; see AnalysisService)
-    void this.analysis.run(id).catch((e: unknown) => {
-      this.logger.error(`analysis.run failed for session ${id}`, e instanceof Error ? e.stack : String(e));
-      this.events.emit(id, 'error', { message: e instanceof Error ? e.message : String(e) });
-    });
+    void this.analysis.run(id).catch((e: unknown) => this.recordAnalysisFailure(id, e));
 
     return this.get(id);
   }
@@ -343,9 +368,9 @@ export class SessionsService {
         } else {
           await this.transitions.apply(sessionId, 'CONFIRM_CATEGORY', 'CATEGORY_CONFIRMED');
           const corrected = optionId === 'correct' ? note : undefined;
-          void this.analysis.run(sessionId, { trustCategory: true, confirmedCategory: corrected }).catch((e: unknown) => {
-            this.events.emit(sessionId, 'error', { message: e instanceof Error ? e.message : String(e) });
-          });
+          void this.analysis
+            .run(sessionId, { trustCategory: true, confirmedCategory: corrected })
+            .catch((e: unknown) => this.recordAnalysisFailure(sessionId, e));
         }
         break;
 
