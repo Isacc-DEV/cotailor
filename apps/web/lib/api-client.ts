@@ -40,10 +40,13 @@ async function request<T>(
 
   try {
     const token = getToken();
+    // FormData bodies must NOT get a Content-Type — the browser sets
+    // multipart/form-data with its boundary itself.
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
     const response = await fetchWithTimeout(url, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
@@ -154,6 +157,28 @@ export const api = {
     delete: async (id: string) => {
       return request<void>(`/profiles/${id}`, {
         method: 'DELETE',
+      });
+    },
+
+    // Upload a .docx/.pdf resume; the API extracts + parses it and returns a
+    // profile DRAFT to prefill the form — nothing is saved by this call.
+    importResume: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return request<{
+        draft: any;
+        meta: {
+          filename: string;
+          fileType: 'pdf' | 'docx';
+          charCount: number;
+          truncated: boolean;
+          warnings: string[];
+        };
+      }>('/profiles/import-resume', {
+        method: 'POST',
+        body: formData,
+        // Extraction + LLM parsing can take a while on long resumes.
+        timeout: 120000,
       });
     },
   },

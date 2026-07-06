@@ -127,6 +127,72 @@ export const resumeValidationSchema = z.object({
 });
 export type ResumeValidation = z.infer<typeof resumeValidationSchema>;
 
+// #7 Resume Import Output — a parsed Word/PDF resume, shaped exactly like the
+// profile form's flat formData so the frontend can prefill it without mapping.
+// Every field uses .catch() fallbacks: LLM output is untrusted, and one bad
+// field must degrade to its default instead of failing the whole import.
+const str = z.string().catch('');
+const strArr = z.array(z.string().catch('')).catch([]);
+export const profileImportSchema = z.object({
+  name: str,
+  category: str,
+  category_confidence: z.number().min(0).max(1).catch(0),
+  subtype: str,
+  header: z
+    .object({
+      name: str,
+      title: str,
+      address: str,
+      phone: str,
+      linkedin: str,
+      url: str,
+    })
+    .catch({ name: '', title: '', address: '', phone: '', linkedin: '', url: '' }),
+  workExperience: z
+    .array(
+      z.object({
+        company: str,
+        position: str,
+        startDate: str,
+        endDate: z.string().nullable().catch(null),
+        location: str,
+        description: str,
+        bullets: strArr,
+        technologies: strArr,
+        impact: str,
+      }),
+    )
+    .catch([]),
+  education: z
+    .array(
+      z.object({
+        institution: str,
+        degree: str,
+        field: str,
+        graduationYear: z.union([z.string(), z.number()]).catch(''),
+        gpa: str,
+        honors: str,
+        relevantCoursework: strArr,
+      }),
+    )
+    .catch([]),
+  skills: strArr,
+  certifications: z
+    .array(
+      z.object({
+        name: str,
+        issuer: str,
+        issueDate: str,
+        expiryDate: str,
+        credentialId: str,
+        credentialUrl: str,
+      }),
+    )
+    .catch([]),
+  warnings: strArr,
+});
+export type ProfileImport = z.infer<typeof profileImportSchema>;
+
 // content_json shape (Section 0.8)
 export const bulletSchema = z.object({
   text: z.string(),

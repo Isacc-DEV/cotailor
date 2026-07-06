@@ -6,10 +6,12 @@ import type {
   ResumeStrategy,
   ResumeContent,
   ResumeValidation,
+  ProfileImport,
 } from '@cotailor/shared';
 import { CATEGORY_TAXONOMY } from '@cotailor/shared';
 import type { BulletRewriteInput, LLMProvider, SummaryInput } from './llm-provider.interface';
 import { StubLlmProvider } from './stub.provider';
+import { buildParseResumePrompt } from './prompts';
 
 // Real provider backed by Google Gemini (REST, no SDK dependency).
 // Only the methods the current flow exercises are LLM-powered
@@ -230,6 +232,11 @@ ${expLines}
 Respond ONLY with JSON: {"text": string}`;
     const out = await this.callJson<{ text: string }>(prompt, 0.4);
     return { text: (out.text || '').trim() };
+  }
+
+  // Resume import: prompt lives in prompts.ts (new method — no inline copy here).
+  async parseResumeToProfile(resumeText: string): Promise<ProfileImport> {
+    return this.callJson<ProfileImport>(buildParseResumePrompt(resumeText), 0.1);
   }
 
   // Unused by the current flow — safe defaults.

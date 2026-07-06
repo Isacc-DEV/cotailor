@@ -7,6 +7,7 @@ import { CoreModule } from './core/core.module';
 import { AnalysisModule } from './analysis/analysis.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { ProfilesModule } from './profiles/profiles.module';
+import { ProfileImportModule } from './profile-import/profile-import.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/auth.guard';
 import { HealthController } from './health.controller';
@@ -20,6 +21,7 @@ import { HealthController } from './health.controller';
     AnalysisModule,
     SessionsModule,
     ProfilesModule,
+    ProfileImportModule,
     AuthModule,
   ],
   controllers: [HealthController],

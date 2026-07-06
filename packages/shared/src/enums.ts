@@ -116,3 +116,6 @@ export const CATEGORY_CONFIDENCE_THRESHOLD = 0.8;
 export const CARD_BUDGET = 7;
 // JD intake cap (Section 9 / 20).
 export const JD_CHAR_CAP = 15000;
+// Resume-import intake cap: text extracted from an uploaded Word/PDF resume is
+// sliced to this length before the parse prompt (resumes are longer than JDs).
+export const RESUME_IMPORT_CHAR_CAP = 30000;

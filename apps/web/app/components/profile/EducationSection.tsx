@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button, ConfirmDialog } from '@/app/components/ui';
 import { useConfirmDialog } from '@/app/hooks/useConfirmDialog';
+import { PROFILE_DEGREES } from '@cotailor/shared';
 import './EducationSection.css';
 
 interface EducationItem {
@@ -23,15 +24,8 @@ interface Props {
   onDelete?: () => void;
 }
 
-const DEGREES = [
-  'High School',
-  'Associate',
-  'Bachelor',
-  'Master',
-  'PhD',
-  'Certificate',
-  'Other',
-];
+// Shared with the resume-import parser prompt, which normalizes degrees to this list.
+const DEGREES = PROFILE_DEGREES;
 
 export default function EducationSection({
   education,

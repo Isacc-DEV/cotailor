@@ -6,6 +6,7 @@ import type {
   ResumeStrategy,
   ResumeContent,
   ResumeValidation,
+  ProfileImport,
 } from '@cotailor/shared';
 import type { BulletRewriteInput, LLMProvider, SummaryInput } from './llm-provider.interface';
 
@@ -184,6 +185,38 @@ export class StubLlmProvider implements LLMProvider {
     }
 
     return { text: `${strip(bullet)}, including ${skill}.` };
+  }
+
+  // Deterministic regex extraction of the unambiguous fields (contact info,
+  // first line as name) so resume import is testable without an LLM; the
+  // structured sections need a real provider.
+  async parseResumeToProfile(resumeText: string): Promise<ProfileImport> {
+    const lines = resumeText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const firstLine = lines[0] ?? '';
+    const looksLikeName = firstLine.length > 0 && firstLine.length <= 60 && firstLine.split(/\s+/).length <= 6;
+    const phone = resumeText.match(/\+?\d[\d\s().-]{7,}\d/)?.[0]?.trim() ?? '';
+    const linkedin = resumeText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[\w-]+/i)?.[0] ?? '';
+    return {
+      name: '',
+      category: '',
+      category_confidence: 0,
+      subtype: '',
+      header: {
+        name: looksLikeName ? firstLine : '',
+        title: '',
+        address: '',
+        phone,
+        linkedin,
+        url: '',
+      },
+      workExperience: [],
+      education: [],
+      skills: [],
+      certifications: [],
+      warnings: [
+        'Parsed with the stub provider — only contact info was extracted. Set LLM_PROVIDER=gemini or openai for full resume parsing.',
+      ],
+    };
   }
 
   // Deterministic summary from the final content; real phrasing needs Gemini.

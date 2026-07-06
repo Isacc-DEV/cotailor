@@ -5,6 +5,7 @@ import type {
   ResumeStrategy,
   ResumeContent,
   ResumeValidation,
+  ProfileImport,
 } from '@cotailor/shared';
 
 // DI token for the active LLM provider (design Section 16).
@@ -47,4 +48,6 @@ export interface LLMProvider {
   reviseResume(input: unknown): Promise<ResumeContent>;
   rewriteBullet(input: BulletRewriteInput): Promise<{ text: string }>;
   writeSummary(input: SummaryInput): Promise<{ text: string }>;
+  /** Parse plain text extracted from an uploaded Word/PDF resume into a profile draft. */
+  parseResumeToProfile(resumeText: string): Promise<ProfileImport>;
 }

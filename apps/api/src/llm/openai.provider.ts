@@ -6,12 +6,14 @@ import type {
   ResumeStrategy,
   ResumeContent,
   ResumeValidation,
+  ProfileImport,
 } from '@cotailor/shared';
 import type { BulletRewriteInput, LLMProvider, SummaryInput } from './llm-provider.interface';
 import { StubLlmProvider } from './stub.provider';
 import {
   buildAnalyzeJDPrompt,
   buildExtractSkillsPrompt,
+  buildParseResumePrompt,
   buildRewriteBulletPrompt,
   buildWriteSummaryPrompt,
 } from './prompts';
@@ -107,6 +109,10 @@ export class OpenAiProvider implements LLMProvider {
   async writeSummary(input: SummaryInput): Promise<{ text: string }> {
     const out = await this.callJson<{ text: string }>(buildWriteSummaryPrompt(input), 0.4);
     return { text: (out.text || '').trim() };
+  }
+
+  async parseResumeToProfile(resumeText: string): Promise<ProfileImport> {
+    return this.callJson<ProfileImport>(buildParseResumePrompt(resumeText), 0.1);
   }
 
   // Unused by the current flow — safe defaults.

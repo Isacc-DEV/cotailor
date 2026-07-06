@@ -4,38 +4,18 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useProfiles } from '@/app/hooks/useProfiles';
 import { Button } from '@/app/components/ui';
+import { api } from '@/lib/api-client';
 import { importProfile, pasteProfileFromClipboard } from '@/app/lib/profile-export';
 import { normalizeSkills } from '@/app/lib/normalize-skills';
 import WorkExperienceSection from '@/app/components/profile/WorkExperienceSection';
 import EducationSection from '@/app/components/profile/EducationSection';
 import CertificationsSection from '@/app/components/profile/CertificationsSection';
+import {
+  PROFILE_CATEGORIES as CATEGORIES,
+  PROFILE_SUBTYPES as SUBTYPES,
+  PROFILE_RESUME_STYLES as RESUME_STYLES,
+} from '@cotailor/shared';
 import './page.css';
-
-const CATEGORIES = [
-  'Software Engineering',
-  'Data Science',
-  'Product Management',
-  'Design',
-  'Sales',
-  'Marketing',
-  'Operations',
-  'Finance',
-  'Human Resources',
-];
-
-const RESUME_STYLES = ['standard', 'modern', 'minimal', 'creative'];
-
-const SUBTYPES: Record<string, string[]> = {
-  'Software Engineering': ['Frontend', 'Backend', 'Full Stack', 'DevOps', 'Mobile'],
-  'Data Science': ['ML Engineer', 'Data Analyst', 'Analytics', 'Research'],
-  'Product Management': ['APM', 'PM', 'Technical PM', 'Strategy'],
-  'Design': ['UX', 'UI', 'Visual', 'Product Designer'],
-  'Sales': ['Enterprise', 'SMB', 'Field', 'Inside Sales'],
-  'Marketing': ['Growth', 'Content', 'Brand', 'Performance'],
-  'Operations': ['HR', 'Finance', 'Supply Chain', 'IT Ops'],
-  'Finance': ['FP&A', 'Accounting', 'Investment', 'Trading'],
-  'Human Resources': ['Recruiter', 'HRBP', 'Compensation', 'Learning'],
-};
 
 export default function CreateProfile() {
   const router = useRouter();
@@ -101,11 +81,23 @@ export default function CreateProfile() {
     setImporting(true);
     setNotice(null);
     try {
-      const result = await importProfile(file);
-      if (result.success && result.data) {
-        applyImported(result.data.profile);
+      const lower = file.name.toLowerCase();
+      if (lower.endsWith('.doc')) {
+        setImportError(['Legacy .doc files are not supported — save the file as .docx or PDF and try again.']);
+      } else if (lower.endsWith('.docx') || lower.endsWith('.pdf')) {
+        // Word/PDF resume: the API extracts the text, parses it into a profile
+        // draft, and returns it — the form below is the review step.
+        const result = await api.profiles.importResume(file);
+        applyImported(result.draft);
+        const warn = result.meta.warnings.length ? ` Note: ${result.meta.warnings.join(' ')}` : '';
+        setNotice(`Imported from ${result.meta.filename} — review the details below, then create.${warn}`);
       } else {
-        setImportError(result.errors || []);
+        const result = await importProfile(file);
+        if (result.success && result.data) {
+          applyImported(result.data.profile);
+        } else {
+          setImportError(result.errors || []);
+        }
       }
     } catch (err) {
       setImportError([err instanceof Error ? err.message : 'Unknown error']);
@@ -199,11 +191,11 @@ export default function CreateProfile() {
       </div>
 
       <div className="header-actions">
-        <label className="export-import-btn import-btn">
-          📤 {importing ? 'Importing...' : 'Import JSON'}
+        <label className="export-import-btn import-btn" title="Import a profile JSON export or a Word/PDF resume">
+          📤 {importing ? 'Importing...' : 'Import (JSON / Word / PDF)'}
           <input
             type="file"
-            accept=".json"
+            accept=".json,.docx,.pdf"
             onChange={handleImportFile}
             disabled={importing}
             style={{ display: 'none' }}
@@ -225,7 +217,7 @@ export default function CreateProfile() {
         <div className="import-error-overlay" onClick={() => setImportError(null)}>
           <div className="import-error-modal" onClick={(e) => e.stopPropagation()}>
             <h2>Import Error</h2>
-            <p>The profile JSON could not be imported. Please check the file and try again.</p>
+            <p>The file could not be imported. Please check it and try again.</p>
             <ul className="error-list">
               {importError.map((err, idx) => (
                 <li key={idx}>• {err}</li>

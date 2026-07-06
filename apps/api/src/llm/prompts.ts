@@ -1,4 +1,10 @@
-import { CATEGORY_TAXONOMY } from '@cotailor/shared';
+import {
+  CATEGORY_TAXONOMY,
+  PROFILE_CATEGORIES,
+  PROFILE_SUBTYPES,
+  PROFILE_DEGREES,
+  RESUME_IMPORT_CHAR_CAP,
+} from '@cotailor/shared';
 import type { BulletRewriteInput, SummaryInput } from './llm-provider.interface';
 
 // Shared prompt builders, extracted VERBATIM from GeminiProvider so every
@@ -130,6 +136,67 @@ Instruction: ${instruction ?? 'Improve the wording.'}`;
   return `${task}
 Respond ONLY with JSON: {"text": string}.
 Existing bullet: ${JSON.stringify(bullet || '')}`;
+}
+
+export function buildParseResumePrompt(resumeText: string): string {
+  const subtypeLines = PROFILE_CATEGORIES.map(
+    (c) => `  ${c}: ${(PROFILE_SUBTYPES[c] ?? []).join(', ')}`,
+  ).join('\n');
+  return `You are parsing the plain text of a candidate's resume into a structured profile.
+
+CORE RULE — EXTRACT ONLY, NEVER INVENT: every value must come from the resume
+text. Anything not present is "" (empty string), null, or [] — never guessed.
+This profile feeds a tool whose promise is that nothing untrue ever reaches a
+resume, so a fabricated field is a FAILURE.
+
+Return ONLY valid JSON. No markdown, no explanations, no text outside JSON.
+
+FIELD RULES:
+1. "name": a short profile label from the candidate's current/most recent role
+   title (e.g. "Senior Backend Engineer") — NOT the person's name.
+2. "category": the closest match from this exact list, else "":
+   ${PROFILE_CATEGORIES.join(', ')}.
+   "category_confidence": 0..1 — how clearly the resume fits that category.
+3. "subtype": the closest match from the chosen category's list below, else "":
+${subtypeLines}
+4. "header": the candidate's contact block. "name" is their full name,
+   "title" their professional title, "address" city/state or location,
+   "linkedin" the LinkedIn URL or handle, "url" any personal site/portfolio.
+5. "workExperience": one entry per role, most recent first.
+   - "position" = job title, "company" = employer.
+   - "startDate"/"endDate" as "YYYY-MM" if month is known, else "YYYY".
+     A current role ("Present", "Now", no end date) → "endDate": null.
+   - "bullets": the role's achievement/description bullets COPIED VERBATIM —
+     do not rewrite, merge, shorten, or improve them.
+   - "technologies": tools/tech named within that role's text.
+   - "description"/"impact": only if the resume has such prose; else "".
+6. "education": one entry per school. "degree" mapped to the closest of:
+   ${PROFILE_DEGREES.join(', ')} (e.g. "B.Sc." → "Bachelor", "MBA" → "Master");
+   use "Other" if unmappable. "field" is the major/discipline.
+   "graduationYear" as a 4-digit year string, else "".
+7. "skills": a flat, deduplicated array of concrete skills, tools, technologies,
+   and techniques listed anywhere in the resume (skills section, role bullets).
+   Atomic keywords only, no proficiency labels or years.
+8. "certifications": named certifications/licenses only, with issuer and dates
+   when stated.
+9. "warnings": short notes on anything you could NOT extract cleanly — e.g.
+   "employment dates for Acme Corp were ambiguous", "two-column layout may have
+   scrambled some text", "no education section found". Empty array if none.
+
+Return JSON EXACTLY in this shape:
+{"name": string, "category": string, "category_confidence": number,
+ "subtype": string,
+ "header": {"name": string, "title": string, "address": string, "phone": string, "linkedin": string, "url": string},
+ "workExperience": [{"company": string, "position": string, "startDate": string, "endDate": string|null, "location": string, "description": string, "bullets": string[], "technologies": string[], "impact": string}],
+ "education": [{"institution": string, "degree": string, "field": string, "graduationYear": string, "gpa": string, "honors": string, "relevantCoursework": string[]}],
+ "skills": string[],
+ "certifications": [{"name": string, "issuer": string, "issueDate": string, "expiryDate": string, "credentialId": string, "credentialUrl": string}],
+ "warnings": string[]}
+
+Resume text:
+"""
+${resumeText.slice(0, RESUME_IMPORT_CHAR_CAP)}
+"""`;
 }
 
 export function buildWriteSummaryPrompt(input: SummaryInput): string {

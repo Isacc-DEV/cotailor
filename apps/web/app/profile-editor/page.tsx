@@ -4,11 +4,17 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useProfiles } from '@/app/hooks/useProfiles';
 import { Button, Spinner } from '@/app/components/ui';
+import { api } from '@/lib/api-client';
 import { exportProfile, importProfile, copyProfileToClipboard, pasteProfileFromClipboard } from '@/app/lib/profile-export';
 import { normalizeSkills } from '@/app/lib/normalize-skills';
 import WorkExperienceSection from '@/app/components/profile/WorkExperienceSection';
 import EducationSection from '@/app/components/profile/EducationSection';
 import CertificationsSection from '@/app/components/profile/CertificationsSection';
+import {
+  PROFILE_CATEGORIES as CATEGORIES,
+  PROFILE_SUBTYPES as SUBTYPES,
+  PROFILE_RESUME_STYLES as RESUME_STYLES,
+} from '@cotailor/shared';
 import './page.css';
 
 interface Profile {
@@ -60,32 +66,6 @@ interface Profile {
     credentialUrl?: string;
   }>;
 }
-
-const CATEGORIES = [
-  'Software Engineering',
-  'Data Science',
-  'Product Management',
-  'Design',
-  'Sales',
-  'Marketing',
-  'Operations',
-  'Finance',
-  'Human Resources',
-];
-
-const RESUME_STYLES = ['standard', 'modern', 'minimal', 'creative'];
-
-const SUBTYPES: Record<string, string[]> = {
-  'Software Engineering': ['Frontend', 'Backend', 'Full Stack', 'DevOps', 'Mobile'],
-  'Data Science': ['ML Engineer', 'Data Analyst', 'Analytics', 'Research'],
-  'Product Management': ['APM', 'PM', 'Technical PM', 'Strategy'],
-  'Design': ['UX', 'UI', 'Visual', 'Product Designer'],
-  'Sales': ['Enterprise', 'SMB', 'Field', 'Inside Sales'],
-  'Marketing': ['Growth', 'Content', 'Brand', 'Performance'],
-  'Operations': ['HR', 'Finance', 'Supply Chain', 'IT Ops'],
-  'Finance': ['FP&A', 'Accounting', 'Investment', 'Trading'],
-  'Human Resources': ['Recruiter', 'HRBP', 'Compensation', 'Learning'],
-};
 
 export default function ProfileEditor() {
   const router = useRouter();
@@ -209,13 +189,42 @@ export default function ProfileEditor() {
     }
   };
 
-  // Import profile from file
+  // Import profile from file (.json export, or a Word/PDF resume parsed by the API)
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setImporting(true);
     try {
+      const lower = file.name.toLowerCase();
+      if (lower.endsWith('.doc')) {
+        setImportError(['Legacy .doc files are not supported — save the file as .docx or PDF and try again.']);
+        return;
+      }
+      if (lower.endsWith('.docx') || lower.endsWith('.pdf')) {
+        const imported = await api.profiles.importResume(file);
+        const draft = imported.draft;
+        // Snapshot first so Ctrl+Z restores the pre-import form.
+        saveToUndoStack();
+        setFormData((prev) => ({
+          ...prev,
+          // Don't blank out identity fields the parser couldn't fill.
+          name: draft.name || prev.name,
+          category: draft.category || prev.category,
+          subtype: draft.subtype || prev.subtype,
+          header: draft.header || {},
+          workExperience: draft.workExperience || [],
+          education: draft.education || [],
+          skills: normalizeSkills(draft.skills),
+          certifications: draft.certifications || [],
+        }));
+        setImportError(null);
+        setImportVersion((v) => v + 1);
+        const warn = imported.meta.warnings.length ? `\n\nNote: ${imported.meta.warnings.join('\n')}` : '';
+        alert(`Imported from ${imported.meta.filename} — review the fields, then save. Nothing is saved until you do.${warn}`);
+        return;
+      }
+
       const result = await importProfile(file);
       if (result.success && result.data) {
         const prof = result.data.profile as any;
@@ -424,11 +433,11 @@ export default function ProfileEditor() {
             📋 Copy
           </button>
 
-          <label className="export-import-btn import-btn">
+          <label className="export-import-btn import-btn" title="Import a profile JSON export or a Word/PDF resume">
             📤 {importing ? 'Importing...' : 'Import'}
             <input
               type="file"
-              accept=".json"
+              accept=".json,.docx,.pdf"
               onChange={handleImportFile}
               disabled={importing}
               style={{ display: 'none' }}
@@ -451,7 +460,7 @@ export default function ProfileEditor() {
         <div className="import-error-overlay" onClick={() => setImportError(null)}>
           <div className="import-error-modal" onClick={(e) => e.stopPropagation()}>
             <h2>Import Error</h2>
-            <p>The profile JSON could not be imported. Please check the file and try again.</p>
+            <p>The file could not be imported. Please check it and try again.</p>
             <ul className="error-list">
               {importError.map((err, idx) => (
                 <li key={idx}>• {err}</li>
