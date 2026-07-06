@@ -59,8 +59,8 @@
 }
 
 .mismatch-card.rejected-badge {
-  border-color: rgba(220, 38, 38, 0.5);
-  background: rgba(220, 38, 38, 0.1);
+  border-color: var(--error-border);
+  background: var(--error-bg);
 }
 
 .mismatch-label {
@@ -79,7 +79,7 @@
 }
 
 .mismatch-card.rejected-badge .mismatch-value {
-  color: #fca5a5;
+  color: var(--error);
 }
 
 .mismatch-arrow {
@@ -89,8 +89,8 @@
 }
 
 .confidence-info {
-  background: rgba(96, 165, 250, 0.05);
-  border: 1px solid rgba(96, 165, 250, 0.2);
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
   border-radius: 0.75rem;
   padding: 1.5rem;
   margin-bottom: 2rem;
@@ -142,7 +142,7 @@
   content: '→';
   position: absolute;
   left: 0;
-  color: #fca5a5;
+  color: var(--text-tertiary);
   font-weight: bold;
 }
 
@@ -191,8 +191,8 @@
 }
 
 .pro-tip {
-  background: rgba(96, 165, 250, 0.05);
-  border: 1px solid rgba(96, 165, 250, 0.2);
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
   border-left: 4px solid var(--accent);
   padding: 1.25rem;
   border-radius: 0.5rem;

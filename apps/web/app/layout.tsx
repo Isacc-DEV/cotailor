@@ -1,9 +1,9 @@
 import './globals.css';
 import type { ReactNode } from 'react';
-import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { Footer } from './components/layout/Footer';
 import { SessionProvider } from './context/SessionContext';
+import { AuthGate } from './components/AuthGate';
 
 export const metadata = {
   title: 'CoTailor',
@@ -15,9 +15,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body className="app-layout">
         <SessionProvider>
-          <Header />
           <Sidebar />
-          <main className="app-main">{children}</main>
+          <main className="app-main">
+            <AuthGate>{children}</AuthGate>
+          </main>
           <Footer />
         </SessionProvider>
       </body>

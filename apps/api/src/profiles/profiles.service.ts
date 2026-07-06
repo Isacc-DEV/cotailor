@@ -1,27 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-const DEV_EMAIL = 'dev@cotailor.local';
-
-// MVP note: real auth (JWT + tenancy) lands in Week 1–2 (design Section 20).
-// For now a single dev user owns all profiles so the flow is runnable end-to-end.
 @Injectable()
 export class ProfilesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private devUser() {
-    return this.prisma.user.upsert({
-      where: { email: DEV_EMAIL },
-      update: {},
-      create: { email: DEV_EMAIL },
-    });
-  }
-
-  async create(body: any) {
-    const user = await this.devUser();
+  async create(userId: string, body: any) {
     return this.prisma.profile.create({
       data: {
-        userId: user.id,
+        userId,
         name: body?.name ?? 'Backend Engineer — Node.js',
         category: body?.category ?? 'Software Engineering',
         baseResume: body?.baseResume ?? {},
@@ -34,30 +21,31 @@ export class ProfilesService {
     });
   }
 
-  async list() {
-    const user = await this.devUser();
+  async list(userId: string) {
     return this.prisma.profile.findMany({
-      where: { userId: user.id, deletedAt: null },
+      where: { userId, deletedAt: null },
       include: { subtypes: true, skills: true },
     });
   }
 
-  async get(id: string) {
+  async get(userId: string, id: string) {
     const p = await this.prisma.profile.findUnique({
       where: { id },
       include: { subtypes: true, skills: true, certifications: true },
     });
-    if (!p) throw new NotFoundException({ error: 'not_found', message: 'Profile not found' });
+    // 404 (not 403) for other users' profiles — don't leak that the id exists.
+    if (!p || p.userId !== userId) {
+      throw new NotFoundException({ error: 'not_found', message: 'Profile not found' });
+    }
     return p;
   }
 
-  async update(id: string, body: any) {
-    // Find existing profile
+  async update(userId: string, id: string, body: any) {
     const existing = await this.prisma.profile.findUnique({
       where: { id },
       include: { subtypes: true, skills: true },
     });
-    if (!existing) {
+    if (!existing || existing.userId !== userId) {
       throw new NotFoundException({ error: 'not_found', message: 'Profile not found' });
     }
 
@@ -134,9 +122,11 @@ export class ProfilesService {
     }
   }
 
-  async delete(id: string) {
+  async delete(userId: string, id: string) {
     const p = await this.prisma.profile.findUnique({ where: { id } });
-    if (!p) throw new NotFoundException({ error: 'not_found', message: 'Profile not found' });
+    if (!p || p.userId !== userId) {
+      throw new NotFoundException({ error: 'not_found', message: 'Profile not found' });
+    }
 
     return this.prisma.profile.update({
       where: { id },

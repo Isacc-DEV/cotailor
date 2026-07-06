@@ -43,15 +43,15 @@
 }
 
 .message-success {
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #6ee7b7;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background-color: var(--success-bg);
+  color: var(--success);
+  border: 1px solid var(--success-border);
 }
 
 .message-error {
-  background-color: rgba(220, 38, 38, 0.1);
-  color: #fca5a5;
-  border: 1px solid rgba(220, 38, 38, 0.3);
+  background-color: var(--error-bg);
+  color: var(--error);
+  border: 1px solid var(--error-border);
 }
 
 .settings-content {
@@ -113,7 +113,7 @@
 .provider-select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.1);
+  box-shadow: var(--focus-ring);
 }
 
 .provider-select:disabled {
@@ -152,7 +152,7 @@
 .api-key-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.1);
+  box-shadow: var(--focus-ring);
 }
 
 .api-key-input:disabled {
@@ -249,8 +249,8 @@
 .status-active {
   display: inline-block;
   padding: 3px 10px;
-  background-color: rgba(16, 185, 129, 0.15);
-  color: #6ee7b7;
+  background-color: var(--success-bg);
+  color: var(--success);
   border-radius: 4px;
   font-weight: 500;
   font-size: 0.8rem;

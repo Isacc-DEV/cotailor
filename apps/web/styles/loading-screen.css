@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f5f5f4 0%, #ede9e6 100%);
+  background: var(--bg-secondary);
   padding: 2rem;
 }
 
@@ -13,22 +13,22 @@
 }
 
 .loading-content {
-  background: white;
+  background: var(--card-bg);
   border-radius: 1rem;
   padding: 3rem 2rem;
   text-align: center;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
 }
 
 .loading-title {
   font-size: 1.75rem;
-  color: #1c1c1c;
+  color: var(--text-primary);
   margin: 1.5rem 0 0.75rem 0;
   font-weight: 700;
 }
 
 .loading-message {
-  color: #78716f;
+  color: var(--text-secondary);
   font-size: 1rem;
   line-height: 1.6;
   margin: 0 0 2rem 0;
@@ -40,7 +40,7 @@
 
 .progress-bar {
   height: 4px;
-  background: #e7e5e4;
+  background: var(--bg-tertiary);
   border-radius: 2px;
   overflow: hidden;
   margin-bottom: 1rem;
@@ -48,7 +48,7 @@
 
 .progress-bar-animated {
   height: 100%;
-  background: linear-gradient(90deg, #059669, #10b981, #059669);
+  background: var(--accent);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -66,7 +66,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
-  color: #78716f;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -79,8 +79,8 @@
 }
 
 .loading-tips {
-  background: #f9f8f7;
-  border: 1px solid #e7e5e4;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 0.75rem;
   padding: 1.5rem;
   text-align: left;
@@ -90,7 +90,7 @@
   margin: 0 0 1rem 0;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #1c1c1c;
+  color: var(--text-primary);
   text-align: center;
 }
 
@@ -101,7 +101,7 @@
 }
 
 .loading-tips li {
-  color: #78716f;
+  color: var(--text-secondary);
   padding-left: 1.5rem;
   position: relative;
   margin-bottom: 0.75rem;
@@ -117,57 +117,8 @@
   content: '✓';
   position: absolute;
   left: 0;
-  color: #059669;
+  color: var(--success);
   font-weight: bold;
-}
-
-/* Dark Mode */
-@media (prefers-color-scheme: dark) {
-  .loading-screen {
-    background: linear-gradient(135deg, #1a1a19 0%, #27251f 100%);
-  }
-
-  .loading-content {
-    background: #27251f;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-  }
-
-  .loading-title {
-    color: #f5f5f4;
-  }
-
-  .loading-message {
-    color: #a8a39d;
-  }
-
-  .progress-bar {
-    background: #44403c;
-  }
-
-  .progress-bar-animated {
-    background: linear-gradient(90deg, #10b981, #34d399, #10b981);
-  }
-
-  .progress-text {
-    color: #a8a39d;
-  }
-
-  .loading-tips {
-    background: #44403c;
-    border-color: #78716f;
-  }
-
-  .loading-tips h3 {
-    color: #f5f5f4;
-  }
-
-  .loading-tips li {
-    color: #a8a39d;
-  }
-
-  .loading-tips li:before {
-    color: #86efac;
-  }
 }
 
 /* Responsive */

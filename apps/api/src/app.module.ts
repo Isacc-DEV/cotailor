@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { LlmModule } from './llm/llm.module';
@@ -7,6 +8,7 @@ import { AnalysisModule } from './analysis/analysis.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/auth.guard';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -21,5 +23,7 @@ import { HealthController } from './health.controller';
     AuthModule,
   ],
   controllers: [HealthController],
+  // Every route requires a bearer token unless marked @Public().
+  providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
 export class AppModule {}

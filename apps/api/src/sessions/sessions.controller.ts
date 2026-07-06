@@ -1,81 +1,89 @@
 import { Body, Controller, Get, HttpCode, MessageEvent, Param, Post, Put, Sse } from '@nestjs/common';
 import type { Observable } from 'rxjs';
 import { SessionsService } from './sessions.service';
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { AuthUser } from '../auth/auth.guard';
 
 @Controller('sessions')
 export class SessionsController {
   constructor(private readonly sessions: SessionsService) {}
 
   @Post()
-  create(@Body() body: { profile_id: string }) {
-    return this.sessions.create(body.profile_id);
+  create(@CurrentUser() user: AuthUser, @Body() body: { profile_id: string }) {
+    return this.sessions.create(user.userId, body.profile_id);
   }
 
   @Get()
-  list() {
-    return this.sessions.list();
+  list(@CurrentUser() user: AuthUser) {
+    return this.sessions.list(user.userId);
   }
 
   @Get(':id')
-  get(@Param('id') id: string) {
-    return this.sessions.get(id);
+  get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.sessions.getOwned(user.userId, id);
   }
 
   @Post(':id/jd')
   @HttpCode(202)
-  submitJd(@Param('id') id: string, @Body() body: { text: string }) {
-    return this.sessions.submitJd(id, body.text);
+  submitJd(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: { text: string }) {
+    return this.sessions.submitJd(user.userId, id, body.text);
   }
 
   @Get(':id/cards')
-  cards(@Param('id') id: string) {
-    return this.sessions.listCards(id);
+  cards(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.sessions.listCards(user.userId, id);
   }
 
   @Get(':id/strategy')
-  strategy(@Param('id') id: string) {
-    return this.sessions.getStrategy(id);
+  strategy(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.sessions.getStrategy(user.userId, id);
   }
 
   @Get(':id/resume')
-  resume(@Param('id') id: string) {
-    return this.sessions.getResume(id);
+  resume(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.sessions.getResume(user.userId, id);
   }
 
   @Put(':id/resume')
-  saveResume(@Param('id') id: string, @Body() body: Record<string, unknown>) {
-    return this.sessions.saveResume(id, body);
+  saveResume(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.sessions.saveResume(user.userId, id, body);
   }
 
   @Post(':id/resume/fix-bullet')
   fixBullet(
+    @CurrentUser() user: AuthUser,
     @Param('id') id: string,
     @Body() body: { text: string; instruction: string; avoid_openers?: string[] },
   ) {
-    return this.sessions.fixBullet(id, body.text, body.instruction, body.avoid_openers ?? []);
+    return this.sessions.fixBullet(user.userId, id, body.text, body.instruction, body.avoid_openers ?? []);
   }
 
   @Post(':id/cards/:cardId/answer')
   answer(
+    @CurrentUser() user: AuthUser,
     @Param('id') id: string,
     @Param('cardId') cardId: string,
     @Body() body: { option_id: string; note?: string },
   ) {
-    return this.sessions.answerCard(id, cardId, body.option_id, body.note);
+    return this.sessions.answerCard(user.userId, id, cardId, body.option_id, body.note);
   }
 
   @Sse(':id/events')
-  events(@Param('id') id: string): Observable<MessageEvent> {
-    return this.sessions.stream(id);
+  events(@CurrentUser() user: AuthUser, @Param('id') id: string): Observable<MessageEvent> {
+    return this.sessions.stream(user.userId, id);
   }
 
   @Post(':id/cancel')
-  cancel(@Param('id') id: string) {
-    return this.sessions.cancel(id);
+  cancel(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.sessions.cancel(user.userId, id);
   }
 
   @Post(':id/generate')
-  generate(@Param('id') id: string) {
-    return this.sessions.generate(id);
+  generate(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.sessions.generate(user.userId, id);
   }
 }

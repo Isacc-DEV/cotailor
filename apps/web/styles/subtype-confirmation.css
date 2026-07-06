@@ -17,18 +17,18 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.3);
   cursor: pointer;
 }
 
 .modal-content {
   position: relative;
-  background: white;
+  background: var(--card-bg);
   border-radius: 1rem;
   padding: 2.5rem;
   max-width: 500px;
   width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
   animation: slideUp 0.3s ease-out;
 }
 
@@ -55,19 +55,19 @@
 
 .modal-header h2 {
   font-size: 1.5rem;
-  color: #1c1c1c;
+  color: var(--text-primary);
   margin: 0 0 0.75rem 0;
   font-weight: 700;
 }
 
 .modal-header p {
-  color: #78716f;
+  color: var(--text-secondary);
   margin: 0;
   line-height: 1.6;
 }
 
 .modal-header strong {
-  color: #1c1c1c;
+  color: var(--text-primary);
   font-weight: 700;
 }
 
@@ -77,7 +77,7 @@
 
 .meter-bar {
   height: 8px;
-  background: #e7e5e4;
+  background: var(--bg-tertiary);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 0.5rem;
@@ -85,13 +85,13 @@
 
 .meter-fill {
   height: 100%;
-  background: linear-gradient(90deg, #f59e0b, #f97316);
+  background: var(--accent);
   transition: width 0.3s ease-out;
 }
 
 .meter-text {
   font-size: 0.85rem;
-  color: #78716f;
+  color: var(--text-secondary);
   font-weight: 600;
   display: block;
   text-align: right;
@@ -108,21 +108,21 @@
   display: flex;
   gap: 1rem;
   padding: 1.25rem;
-  border: 2px solid #e7e5e4;
+  border: 2px solid var(--border-color);
   border-radius: 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
-  background: #f9f8f7;
+  background: var(--bg-secondary);
 }
 
 .subtype-option:hover {
-  border-color: #d1ccc7;
-  background: white;
+  border-color: var(--border-light);
+  background: var(--card-bg);
 }
 
 .subtype-option.selected {
-  border-color: #059669;
-  background: #eff6ff;
+  border-color: var(--accent);
+  background: var(--card-bg);
 }
 
 .option-radio {
@@ -134,7 +134,7 @@
   width: 20px;
   height: 20px;
   cursor: pointer;
-  accent-color: #059669;
+  accent-color: var(--accent);
 }
 
 .option-content {
@@ -145,34 +145,34 @@
   margin: 0 0 0.25rem 0;
   font-size: 1rem;
   font-weight: 700;
-  color: #1c1c1c;
+  color: var(--text-primary);
 }
 
 .option-content p {
   margin: 0;
   font-size: 0.9rem;
-  color: #78716f;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
 .subtype-option.selected .option-content p {
-  color: #0d753d;
+  color: var(--text-primary);
 }
 
 .info-box {
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
-  border-left: 3px solid #f59e0b;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  border-left: 3px solid var(--warning);
   padding: 1rem;
   border-radius: 0.5rem;
   font-size: 0.9rem;
-  color: #92400e;
+  color: var(--warning);
   margin-bottom: 1.5rem;
   line-height: 1.5;
 }
 
 .info-box strong {
-  color: #78350f;
+  color: var(--warning);
   font-weight: 600;
 }
 
@@ -184,80 +184,6 @@
 
 .modal-actions button {
   min-width: 150px;
-}
-
-/* Dark Mode */
-@media (prefers-color-scheme: dark) {
-  .modal-overlay {
-    background: rgba(0, 0, 0, 0.8);
-  }
-
-  .modal-content {
-    background: #27251f;
-    color: #f5f5f4;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  }
-
-  .modal-header h2 {
-    color: #f5f5f4;
-  }
-
-  .modal-header p {
-    color: #a8a39d;
-  }
-
-  .modal-header strong {
-    color: #f5f5f4;
-  }
-
-  .meter-bar {
-    background: #44403c;
-  }
-
-  .meter-text {
-    color: #a8a39d;
-  }
-
-  .subtype-option {
-    border-color: #44403c;
-    background: #44403c;
-  }
-
-  .subtype-option:hover {
-    border-color: #78716f;
-    background: #27251f;
-  }
-
-  .subtype-option.selected {
-    border-color: #10b981;
-    background: #064e3b;
-  }
-
-  .option-radio input {
-    accent-color: #10b981;
-  }
-
-  .option-content h3 {
-    color: #f5f5f4;
-  }
-
-  .option-content p {
-    color: #a8a39d;
-  }
-
-  .subtype-option.selected .option-content p {
-    color: #86efac;
-  }
-
-  .info-box {
-    background: #78350f;
-    border-color: #b45309;
-    color: #fef3c7;
-  }
-
-  .info-box strong {
-    color: #fcd34d;
-  }
 }
 
 /* Responsive */

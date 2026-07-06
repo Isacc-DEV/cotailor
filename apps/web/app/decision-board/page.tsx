@@ -130,7 +130,7 @@ export default function DecisionBoard() {
       <div className="decision-board">
         {error ? (
           <div className="all-answered">
-            <div className="success-icon" style={{ background: '#fee2e2', color: '#dc2626' }}>
+            <div className="success-icon" style={{ background: 'var(--error-bg)', color: 'var(--error)' }}>
               !
             </div>
             <h2>Analysis didn't finish</h2>
@@ -151,7 +151,7 @@ export default function DecisionBoard() {
     return (
       <div className="decision-board">
         <div className="all-answered">
-          <div className="success-icon" style={{ background: '#fee2e2', color: '#dc2626' }}>
+          <div className="success-icon" style={{ background: 'var(--error-bg)', color: 'var(--error)' }}>
             ✕
           </div>
           <h2>{card?.payload.title || "This job doesn't match your profile"}</h2>

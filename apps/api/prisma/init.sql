@@ -24,6 +24,7 @@ CREATE TYPE "CategoryRelationKind" AS ENUM ('same','adjacent','distinct');
 CREATE TABLE "User" (
   "id" TEXT NOT NULL,
   "email" TEXT NOT NULL,
+  "name" TEXT,
   "passwordHash" TEXT,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "User_pkey" PRIMARY KEY ("id")
@@ -35,7 +36,6 @@ CREATE TABLE "Profile" (
   "userId" TEXT NOT NULL,
   "name" TEXT NOT NULL,
   "category" TEXT NOT NULL,
-  "seniority" "Seniority" NOT NULL,
   "baseResume" JSONB NOT NULL,
   "domainTags" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
   "workAuthorization" TEXT,

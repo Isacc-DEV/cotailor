@@ -3,17 +3,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/app/components/ui';
+import { api } from '@/lib/api-client';
+import { setAuth } from '@/lib/auth';
 import '../auth.css';
 
 export default function SignUp() {
   const router = useRouter();
   const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '' });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
@@ -46,26 +48,13 @@ export default function SignUp() {
     setServerError('');
     
     try {
-      const response = await fetch('http://localhost:3001/api/v1/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          name: formData.name,
-        }),
+      const data = await api.auth.signup({
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
       });
+      setAuth(data.token, { id: data.userId, email: data.email, name: data.name || formData.name });
 
-      const json = await response.json();
-
-      if (!response.ok || !json.success) {
-        throw new Error(json.error?.message || 'Sign up failed');
-      }
-
-      const { userId, email, token } = json.data;
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('user', JSON.stringify({ id: userId, email, name: formData.name }));
-      
       router.push('/profile-selector');
     } catch (err) {
       setServerError(err.message || 'Sign up failed. Please try again.');

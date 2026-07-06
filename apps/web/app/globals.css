@@ -1,41 +1,53 @@
 :root {
-  /* ChatGPT-inspired Color Palette */
-  --accent: #10a37f;
-  --accent-hover: #0d8659;
-  --accent-light: #19c37d;
+  /* ChatGPT-style light theme — minimal palette: white surfaces, near-black text,
+     light gray borders. Color is reserved for semantic states only. */
+  --accent: #0d0d0d;
+  --accent-hover: #2f2f2f;
+  --accent-light: #2f2f2f;
 
-  --text-primary: #ececf1;
-  --text-secondary: #b4b8c0;
-  --text-tertiary: #8b8d98;
+  --text-primary: #0d0d0d;
+  --text-secondary: #5d5d5d;
+  --text-tertiary: #8f8f8f;
 
-  --bg-primary: #0d0e15;
-  --bg-secondary: #1a1b26;
-  --bg-tertiary: #2a2b35;
-  --bg-surface: #0d0e15;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9f9f9;
+  --bg-tertiary: #ececec;
+  --bg-surface: #ffffff;
 
-  --sidebar-bg: #0d0e15;
-  --card-bg: #1a1b26;
-  --card-hover-bg: #25262f;
+  --sidebar-bg: #f9f9f9;
+  --card-bg: #ffffff;
+  --card-hover-bg: #f5f5f5;
 
-  --border-color: #413f47;
-  --border-light: #565869;
+  --border-color: #e6e6e6;
+  --border-light: #cfcfcf;
 
-  --scrollbar-thumb: #565869;
-  --scrollbar-track: #1a1b26;
+  --scrollbar-thumb: #d4d4d4;
+  --scrollbar-track: transparent;
 
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
-  --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 12px 0 rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 20px 0 rgba(0, 0, 0, 0.6);
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px 0 rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 24px 0 rgba(0, 0, 0, 0.12);
 
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
   --font-mono: 'Menlo', 'Monaco', 'Courier New', monospace;
 
-  /* Semantic Colors */
-  --success: #19c37d;
-  --warning: #f5a623;
-  --error: #d64545;
-  --info: #1e90ff;
+  /* Semantic Colors — the only hues in the app */
+  --success: #10a37f;
+  --success-bg: rgba(16, 163, 127, 0.08);
+  --success-border: rgba(16, 163, 127, 0.25);
+  --warning: #b45309;
+  --warning-bg: rgba(180, 83, 9, 0.08);
+  --warning-border: rgba(180, 83, 9, 0.25);
+  --error: #d92d20;
+  --error-hover: #b42318;
+  --error-bg: rgba(217, 45, 32, 0.06);
+  --error-border: rgba(217, 45, 32, 0.25);
+  --info: #5d5d5d;
+  --info-bg: #ececec;
+  --info-border: #e6e6e6;
+
+  --focus-ring: 0 0 0 3px rgba(13, 13, 13, 0.08);
 }
 
 * {
@@ -59,39 +71,23 @@ body {
   font-size: 14px;
 }
 
+/* ChatGPT-style shell: no top header — the sidebar carries brand, nav, and account. */
 .app-layout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  grid-template-rows: 60px 1fr;
+  display: flex;
   height: 100vh;
   width: 100%;
 }
 
-.app-layout header {
-  grid-column: 1 / -1;
-  grid-row: 1;
-  z-index: 50;
-}
-
 .app-layout main {
-  grid-column: 2;
-  grid-row: 2;
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
   overflow-y: auto;
   background-color: var(--bg-primary);
 }
 
 .app-layout footer {
   display: none;
-}
-
-@media (max-width: 1024px) {
-  .app-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .app-layout main {
-    grid-column: 1;
-  }
 }
 
 a {
@@ -129,7 +125,7 @@ select {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--text-tertiary);
 }
 
 /* Form Elements */
@@ -145,7 +141,7 @@ textarea {
   padding: 10px 12px;
   border-radius: 8px;
   font-size: 0.95rem;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   font-family: inherit;
 }
 
@@ -163,7 +159,6 @@ input[type="number"]:hover,
 select:hover,
 textarea:hover {
   border-color: var(--border-light);
-  background-color: var(--card-hover-bg);
 }
 
 input[type="text"]:focus,
@@ -174,7 +169,7 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.15);
+  box-shadow: var(--focus-ring);
   background-color: var(--card-bg);
 }
 

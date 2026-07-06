@@ -1,3 +1,5 @@
+import { clearAuth, getToken } from './auth';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 interface ApiResponse<T> {
@@ -37,13 +39,24 @@ async function request<T>(
   const url = `${API_BASE_URL}${endpoint}`;
 
   try {
+    const token = getToken();
     const response = await fetchWithTimeout(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
     });
+
+    // Expired/invalid token: drop it and send the user back to signin.
+    // Auth endpoints are excluded so a wrong password doesn't cause a redirect.
+    if (response.status === 401 && !endpoint.startsWith('/auth/')) {
+      clearAuth();
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
+        window.location.assign('/auth/signin');
+      }
+    }
 
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
@@ -82,6 +95,26 @@ async function request<T>(
 }
 
 export const api = {
+  auth: {
+    signup: async (data: { email: string; password: string; name?: string }) => {
+      return request<{ userId: string; email: string; name: string | null; token: string }>(
+        '/auth/signup',
+        { method: 'POST', body: JSON.stringify(data) },
+      );
+    },
+
+    signin: async (data: { email: string; password: string }) => {
+      return request<{ userId: string; email: string; name: string | null; token: string }>(
+        '/auth/signin',
+        { method: 'POST', body: JSON.stringify(data) },
+      );
+    },
+
+    me: async () => {
+      return request<{ userId: string; email: string; name: string | null }>('/auth/me');
+    },
+  },
+
   profiles: {
     list: async () => {
       return request<any[]>('/profiles');
@@ -126,6 +159,10 @@ export const api = {
   },
 
   sessions: {
+    list: async () => {
+      return request<any[]>('/sessions');
+    },
+
     create: async (profileId: string) => {
       return request<any>('/sessions', {
         method: 'POST',

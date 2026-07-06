@@ -24,9 +24,9 @@
 }
 
 .error-message {
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  color: #fca5a5;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  color: var(--error);
   padding: 1rem;
   border-radius: 0.5rem;
   margin-bottom: 1.5rem;
@@ -52,13 +52,13 @@
 }
 
 .filter-btn:hover {
-  border-color: var(--border-dark);
+  border-color: var(--border-light);
   background: var(--bg-secondary);
 }
 
 .filter-btn.active {
   border-color: var(--accent);
-  background: rgba(96, 165, 250, 0.1);
+  background: var(--bg-tertiary);
   color: var(--accent);
 }
 

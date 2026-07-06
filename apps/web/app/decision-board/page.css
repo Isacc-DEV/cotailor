@@ -24,9 +24,9 @@
 }
 
 .error-message {
-  background: linear-gradient(135deg, rgba(214, 69, 69, 0.1) 0%, rgba(220, 53, 69, 0.05) 100%);
-  border: 1px solid rgba(214, 69, 69, 0.3);
-  color: #f78989;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  color: var(--error);
   padding: 14px 16px;
   border-radius: 10px;
   margin-bottom: 24px;
@@ -35,8 +35,8 @@
 
 /* Assumed Defaults Section */
 .assumed-defaults {
-  background: linear-gradient(135deg, rgba(16, 163, 127, 0.08) 0%, rgba(16, 163, 127, 0.03) 100%);
-  border: 1px solid rgba(16, 163, 127, 0.2);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 32px;
@@ -69,7 +69,7 @@
   background: var(--card-bg);
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid rgba(16, 163, 127, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .default-question {
@@ -107,14 +107,14 @@
 .all-answered {
   text-align: center;
   padding: 48px 32px;
-  background: linear-gradient(135deg, var(--card-bg) 0%, var(--card-hover-bg) 100%);
+  background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 12px;
 }
 
 .success-icon {
   font-size: 3.5rem;
-  color: var(--accent);
+  color: var(--success);
   margin-bottom: 16px;
 }
 
@@ -170,12 +170,12 @@
 
 /* --- Decision card (rebuilt board) --- */
 .decision-card {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   padding: 1.25rem;
   margin-bottom: 1rem;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-xs);
 }
 .decision-card-head {
   display: flex;
@@ -187,11 +187,11 @@
   margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 .decision-card-msg {
   margin: 0 0 1rem 0;
-  color: #4b5563;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   line-height: 1.5;
 }
@@ -207,34 +207,34 @@
   gap: 0.15rem;
   text-align: left;
   padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
-  background: #f9fafb;
+  background: var(--bg-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 .decision-option:hover:not(:disabled) {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: var(--accent);
+  background: var(--card-hover-bg);
 }
 .decision-option:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 .decision-option.recommended {
-  border-color: #93c5fd;
-  background: #eff6ff;
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
 }
 .opt-label {
   font-weight: 600;
   font-size: 0.9rem;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 .opt-recommended {
-  color: #2563eb;
+  color: var(--info);
   font-weight: 500;
 }
 .opt-consequence {
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }

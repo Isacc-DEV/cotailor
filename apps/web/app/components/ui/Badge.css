@@ -9,31 +9,31 @@
 }
 
 .badge-default {
-  background: var(--card-hover-bg);
+  background: var(--bg-tertiary);
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
 }
 
 .badge-info {
-  background: linear-gradient(135deg, rgba(30, 144, 255, 0.1) 0%, rgba(30, 144, 255, 0.05) 100%);
+  background: var(--info-bg);
   color: var(--info);
-  border: 1px solid rgba(30, 144, 255, 0.2);
+  border: 1px solid var(--info-border);
 }
 
 .badge-warning {
-  background: linear-gradient(135deg, rgba(245, 166, 35, 0.1) 0%, rgba(245, 166, 35, 0.05) 100%);
-  color: #f5a623;
-  border: 1px solid rgba(245, 166, 35, 0.2);
+  background: var(--warning-bg);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
 }
 
 .badge-success {
-  background: linear-gradient(135deg, rgba(16, 163, 127, 0.1) 0%, rgba(25, 195, 125, 0.05) 100%);
-  color: var(--accent);
-  border: 1px solid rgba(16, 163, 127, 0.2);
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid var(--success-border);
 }
 
 .badge-error {
-  background: linear-gradient(135deg, rgba(214, 69, 69, 0.1) 0%, rgba(214, 69, 69, 0.05) 100%);
-  color: #f78989;
-  border: 1px solid rgba(214, 69, 69, 0.2);
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1px solid var(--error-border);
 }

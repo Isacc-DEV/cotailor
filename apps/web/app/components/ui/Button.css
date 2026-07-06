@@ -5,7 +5,7 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -19,27 +19,23 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);
+  background: var(--accent);
+  color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent) 100%);
-  box-shadow: 0 6px 16px rgba(16, 163, 127, 0.4);
-  transform: translateY(-1px);
+  background: var(--accent-hover);
 }
 
 .btn-secondary {
   background: var(--card-bg);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover:not(:disabled) {
   background: var(--card-hover-bg);
   border-color: var(--border-light);
-  color: var(--text-primary);
 }
 
 .btn-tertiary {
@@ -55,15 +51,12 @@
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, #d64545 0%, #e85555 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(214, 69, 69, 0.3);
+  background: var(--error);
+  color: #ffffff;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: linear-gradient(135deg, #e85555 0%, #d64545 100%);
-  box-shadow: 0 6px 16px rgba(214, 69, 69, 0.4);
-  transform: translateY(-1px);
+  background: var(--error-hover);
 }
 
 .btn-sm {

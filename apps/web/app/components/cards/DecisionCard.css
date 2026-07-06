@@ -13,16 +13,16 @@
 }
 
 .decision-card-warning {
-  border-left: 4px solid #f5a623;
+  border-left: 4px solid var(--warning);
 }
 
 .decision-card-blocking {
-  border-left: 4px solid #d64545;
+  border-left: 4px solid var(--error);
 }
 
 .decision-card-critical {
-  border-left: 4px solid #d64545;
-  background: linear-gradient(135deg, rgba(214, 69, 69, 0.05) 0%, rgba(214, 69, 69, 0.02) 100%);
+  border-left: 4px solid var(--error);
+  background: var(--error-bg);
 }
 
 .card-header {
@@ -54,8 +54,8 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
-  color: white;
+  background: var(--success);
+  color: #ffffff;
   border-radius: 50%;
   font-weight: 700;
   flex-shrink: 0;
@@ -82,12 +82,12 @@
 }
 
 .option-label:hover {
-  background: rgba(16, 163, 127, 0.08);
-  border-color: rgba(16, 163, 127, 0.2);
+  background: var(--bg-tertiary);
+  border-color: var(--border-light);
 }
 
 .option-label:has(input:checked) {
-  background: linear-gradient(135deg, rgba(16, 163, 127, 0.15) 0%, rgba(25, 195, 125, 0.1) 100%);
+  background: var(--bg-tertiary);
   border-color: var(--accent);
 }
 

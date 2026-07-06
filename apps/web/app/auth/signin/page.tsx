@@ -3,17 +3,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/app/components/ui';
+import { api } from '@/lib/api-client';
+import { setAuth } from '@/lib/auth';
 import '../auth.css';
 
 export default function SignIn() {
   const router = useRouter();
   const [formData, setFormData] = useState({ email: '', password: '' });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: Record<string, string> = {};
 
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email';
@@ -44,25 +46,12 @@ export default function SignIn() {
     setServerError('');
     
     try {
-      const response = await fetch('http://localhost:3001/api/v1/auth/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+      const data = await api.auth.signin({
+        email: formData.email,
+        password: formData.password,
       });
+      setAuth(data.token, { id: data.userId, email: data.email, name: data.name || data.email });
 
-      const json = await response.json();
-
-      if (!response.ok || !json.success) {
-        throw new Error(json.error?.message || 'Sign in failed');
-      }
-
-      const { userId, email, token } = json.data;
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('user', JSON.stringify({ id: userId, email, name: json.data.name || email }));
-      
       router.push('/profile-selector');
     } catch (err) {
       setServerError(err.message || 'Sign in failed. Please try again.');

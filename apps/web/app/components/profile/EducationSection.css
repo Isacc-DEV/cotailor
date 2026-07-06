@@ -8,16 +8,16 @@
 }
 
 .education-card {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   padding: 1.5rem;
-  background-color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: var(--card-bg);
+  box-shadow: var(--shadow-sm);
   transition: all 0.2s ease;
 }
 
 .education-card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .edu-header {
@@ -32,20 +32,20 @@
   margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 
 .edu-title .degree-info {
   margin: 0.25rem 0 0 0;
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .edu-title .graduation {
   margin: 0.25rem 0 0 0;
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .edu-actions {
@@ -58,32 +58,32 @@
 .btn-delete {
   padding: 0.375rem 0.75rem;
   font-size: 0.8125rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .btn-edit {
-  color: #2563eb;
-  border-color: #bfdbfe;
+  color: var(--text-secondary);
+  border-color: var(--border-color);
 }
 
 .btn-edit:hover {
-  background-color: #eff6ff;
-  border-color: #60a5fa;
+  background-color: var(--card-hover-bg);
+  border-color: var(--border-light);
 }
 
 .btn-delete {
-  color: #dc2626;
-  border-color: #fecaca;
+  color: var(--error);
+  border-color: var(--error-border);
 }
 
 .btn-delete:hover {
-  background-color: #fef2f2;
-  border-color: #fca5a5;
+  background-color: var(--error-bg);
+  border-color: var(--error);
 }
 
 .edu-details {
@@ -92,20 +92,20 @@
   gap: 1rem;
   margin-bottom: 1rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .detail {
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--text-secondary);
   padding: 0.25rem 0.75rem;
-  background-color: #f3f4f6;
+  background-color: var(--bg-tertiary);
   border-radius: 0.375rem;
 }
 
 .detail.honors {
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .coursework {
@@ -116,7 +116,7 @@
 
 .coursework strong {
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--text-secondary);
 }
 
 .course-tags {
@@ -129,19 +129,19 @@
   display: inline-block;
   padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
-  background-color: #e0e7ff;
-  color: #3730a3;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
   border-radius: 0.5rem;
-  border: 1px solid #c7d2fe;
+  border: 1px solid var(--border-color);
 }
 
 /* Education Form */
 
 .education-form {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   padding: 1.5rem;
-  background-color: #f9fafb;
+  background-color: var(--bg-secondary);
   margin-bottom: 1.5rem;
 }
 
@@ -162,14 +162,14 @@
   margin-bottom: 0.375rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-secondary);
 }
 
 .form-group input[type='text'],
 .form-group input[type='number'],
 .form-group select {
   padding: 0.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   font-size: 0.875rem;
   font-family: inherit;
@@ -179,13 +179,13 @@
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
 }
 
 .form-group select {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235d5d5d' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.5rem center;
   padding-right: 2rem;
@@ -199,8 +199,8 @@
   gap: 0.5rem;
   margin-bottom: 0.75rem;
   padding: 0.75rem;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
 }
 
@@ -210,8 +210,8 @@
   align-items: center;
   padding: 0.5rem;
   font-size: 0.875rem;
-  color: #374151;
-  background-color: #f9fafb;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
   border-radius: 0.25rem;
 }
 
@@ -223,7 +223,7 @@
   padding: 0.25rem 0.5rem;
   background: none;
   border: none;
-  color: #dc2626;
+  color: var(--error);
   cursor: pointer;
   font-size: 1rem;
   line-height: 1;
@@ -231,7 +231,7 @@
 }
 
 .btn-remove:hover {
-  color: #991b1b;
+  color: var(--error);
   transform: scale(1.2);
 }
 
@@ -245,20 +245,20 @@
 .add-course input {
   flex: 1;
   padding: 0.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   font-size: 0.875rem;
 }
 
 .add-course input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
 }
 
 .btn-add {
   padding: 0.5rem 1rem;
-  background-color: #2563eb;
+  background-color: var(--accent);
   color: #ffffff;
   border: none;
   border-radius: 0.375rem;
@@ -269,7 +269,7 @@
 }
 
 .btn-add:hover {
-  background-color: #1d4ed8;
+  background-color: var(--accent-hover);
 }
 
 .btn-add:active {
@@ -290,14 +290,14 @@
 .empty-state {
   text-align: center;
   padding: 2rem;
-  background-color: #f9fafb;
-  border: 2px dashed #d1d5db;
+  background-color: var(--bg-secondary);
+  border: 2px dashed var(--border-light);
   border-radius: 0.5rem;
 }
 
 .empty-state p {
   margin: 0 0 1rem 0;
-  color: #6b7280;
+  color: var(--text-tertiary);
   font-size: 0.875rem;
 }
 

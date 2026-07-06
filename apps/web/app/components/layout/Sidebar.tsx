@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Button } from '@/app/components/ui';
+import { api } from '@/lib/api-client';
+import { AUTH_CHANGED_EVENT, clearAuth, getStoredUser, type AuthUser } from '@/lib/auth';
 import { routeForState } from '@/app/lib/session-routes';
 import './sidebar.css';
 
@@ -18,68 +19,73 @@ interface JDHistory {
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [history, setHistory] = useState<JDHistory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isClient, setIsClient] = useState(false);
-
-  // Check if we should show sidebar
-  const showSidebar =
-    pathname?.includes('/jd-input') ||
-    pathname?.includes('/decision-board') ||
-    pathname?.includes('/strategy-review') ||
-    pathname?.includes('/resume-preview');
 
   useEffect(() => {
     setIsClient(true);
+    const sync = () => setUser(getStoredUser());
+    sync();
+    // Stays in sync with signin/signout without a full page reload.
+    window.addEventListener(AUTH_CHANGED_EVENT, sync);
+    return () => window.removeEventListener(AUTH_CHANGED_EVENT, sync);
+  }, []);
+
+  useEffect(() => {
     // Extract session ID from URL if present
     const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
     setCurrentSessionId(params.get('sessionId'));
   }, [pathname]);
 
   useEffect(() => {
-    if (!isClient || !showSidebar) return;
+    if (!isClient || !user) {
+      setHistory([]);
+      return;
+    }
 
+    let stale = false;
     const fetchJDHistory = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:3001/api/v1/sessions', {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          // Filter sessions that have JD submitted and convert to JD history format
-          const jdHistory = Array.isArray(data)
-            ? data
-                .filter((session: any) => session.jdDocumentId) // Only show sessions with JD
-                .map((session: any) => ({
-                  id: session.id,
-                  profileName: session.profile?.name || 'Unnamed Profile',
-                  jdTitle: session.jdDocument?.text?.split('\n')[0]?.substring(0, 60) || 'Job Description',
-                  state: session.state,
-                  createdAt: session.createdAt,
-                  updatedAt: session.updatedAt,
-                }))
-            : [];
+        const data = await api.sessions.list();
+        const jdHistory = (Array.isArray(data) ? data : [])
+          .filter((session: any) => session.jdDocumentId) // Only show sessions with JD
+          .map((session: any) => ({
+            id: session.id,
+            profileName: session.profile?.name || 'Unnamed Profile',
+            jdTitle: session.jdDocument?.text?.split('\n')[0]?.substring(0, 60) || 'Job Description',
+            state: session.state,
+            createdAt: session.createdAt,
+            updatedAt: session.updatedAt,
+          }));
+        if (!stale) {
           setHistory(
-            jdHistory.sort((a, b) =>
-              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-            )
+            jdHistory.sort(
+              (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+            ),
           );
         }
       } catch (error) {
         console.error('Failed to fetch JD history:', error);
       } finally {
-        setLoading(false);
+        if (!stale) setLoading(false);
       }
     };
 
     fetchJDHistory();
-  }, [isClient, showSidebar]);
+    return () => {
+      stale = true;
+    };
+  }, [isClient, user, pathname]);
+
+  const handleNavigation = (path: string) => {
+    router.push(path);
+    setIsOpen(false);
+  };
 
   // Open the session where it left off — finished ones go straight to the resume.
   const handleSessionClick = (sessionId: string, state: string) => {
@@ -87,41 +93,10 @@ export function Sidebar() {
     setIsOpen(false);
   };
 
-  const handleNewSession = async () => {
-    try {
-      // Get the first profile to create a session
-      const response = await fetch('http://localhost:3001/api/v1/profiles', {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const profiles = await response.json();
-        if (profiles.length > 0) {
-          // Create session with first profile
-          const sessionRes = await fetch('http://localhost:3001/api/v1/sessions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ profile_id: profiles[0].id }),
-          });
-
-          if (sessionRes.ok) {
-            const session = await sessionRes.json();
-            router.push(`/jd-input?sessionId=${session.id}`);
-            setIsOpen(false);
-            return;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to create new session:', error);
-    }
-
-    // Fallback to profile selector if no profiles exist
-    router.push('/profile-selector');
+  const handleSignOut = () => {
+    clearAuth();
+    setUser(null);
+    router.push('/');
     setIsOpen(false);
   };
 
@@ -174,12 +149,15 @@ export function Sidebar() {
     }
   };
 
-  if (!showSidebar) return null;
+  // Auth screens are the only places without the sidebar (ChatGPT-style shell).
+  if (pathname?.startsWith('/auth')) return null;
+
+  const displayName = user ? user.name || user.email : '';
 
   return (
     <>
       {/* Mobile toggle button */}
-      <button className="sidebar-toggle-mobile" onClick={() => setIsOpen(!isOpen)}>
+      <button className="sidebar-toggle-mobile" onClick={() => setIsOpen(!isOpen)} aria-label="Open menu">
         <span className="toggle-icon">☰</span>
       </button>
 
@@ -188,63 +166,98 @@ export function Sidebar() {
 
       {/* Sidebar */}
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <h2>JD History</h2>
-          <button className="close-btn" onClick={() => setIsOpen(false)}>
+        <div className="sidebar-brand">
+          <button className="brand-link" onClick={() => handleNavigation('/')}>
+            <span className="brand-icon">C</span>
+            <span className="brand-text">CoTailor</span>
+          </button>
+          <button className="close-btn" onClick={() => setIsOpen(false)} aria-label="Close menu">
             ✕
           </button>
         </div>
 
-        <div className="sidebar-actions">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleNewSession}
-            className="new-session-btn"
-          >
-            + New Session
-          </Button>
-        </div>
+        {isClient && user && (
+          <nav className="sidebar-nav">
+            {/* Selecting a profile IS step one of a new session, so this lands on the profile selector. */}
+            <button className="sidebar-nav-link nav-new-session" onClick={() => handleNavigation('/profile-selector')}>
+              <span className="nav-icon">+</span> New session
+            </button>
+          </nav>
+        )}
 
         <div className="sidebar-content">
-          {loading ? (
-            <div className="loading-state">
-              <div className="spinner-small" />
-              <p>Loading history...</p>
-            </div>
-          ) : history.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📋</div>
-              <p>No JD history yet</p>
-              <p className="empty-help">Submit a JD to start tailoring</p>
-            </div>
-          ) : (
-            <div className="sessions-list">
-              {history.map((item) => (
-                <button
-                  key={item.id}
-                  className={`session-item ${currentSessionId === item.id ? 'active' : ''}`}
-                  onClick={() => handleSessionClick(item.id, item.state)}
-                  title={`${item.profileName} - ${item.jdTitle}`}
-                >
-                  <div className="session-item-content">
-                    <div className="session-title">{item.profileName}</div>
-                    <div className="session-subtitle">{item.jdTitle}</div>
-                    <div className="session-meta">
-                      <span className={`session-state ${getStateColor(item.state)}`}>
-                        {getStateLabel(item.state)}
-                      </span>
-                      <span className="session-time">{formatDate(item.updatedAt)}</span>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+          {isClient && user ? (
+            loading ? (
+              <div className="loading-state">
+                <div className="spinner-small" />
+                <p>Loading history...</p>
+              </div>
+            ) : history.length === 0 ? (
+              <div className="empty-state">
+                <p>No sessions yet</p>
+                <p className="empty-help">Submit a JD to start tailoring</p>
+              </div>
+            ) : (
+              <>
+                <div className="sidebar-section-header">
+                  <span className="sidebar-section-label">Recent</span>
+                  <button className="view-all-link" onClick={() => handleNavigation('/session-history')}>
+                    View all
+                  </button>
+                </div>
+                <div className="sessions-list">
+                  {history.map((item) => (
+                    <button
+                      key={item.id}
+                      className={`session-item ${currentSessionId === item.id ? 'active' : ''}`}
+                      onClick={() => handleSessionClick(item.id, item.state)}
+                      title={`${item.profileName} - ${item.jdTitle}`}
+                    >
+                      <div className="session-item-content">
+                        <div className="session-title">{item.profileName}</div>
+                        <div className="session-subtitle">{item.jdTitle}</div>
+                        <div className="session-meta">
+                          <span className={`session-state ${getStateColor(item.state)}`}>
+                            {getStateLabel(item.state)}
+                          </span>
+                          <span className="session-time">{formatDate(item.updatedAt)}</span>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )
+          ) : null}
         </div>
 
         <div className="sidebar-footer">
-          <p className="sidebar-hint">Click to resume a session</p>
+          {isClient && user ? (
+            <>
+              <div className="account-row" title={displayName}>
+                <span className="account-avatar">{displayName.charAt(0).toUpperCase()}</span>
+                <span className="account-name">{displayName}</span>
+              </div>
+              <button
+                className={`sidebar-nav-link ${pathname === '/settings' ? 'active' : ''}`}
+                onClick={() => handleNavigation('/settings')}
+              >
+                Settings
+              </button>
+              <button className="sidebar-nav-link" onClick={handleSignOut}>
+                Sign out
+              </button>
+            </>
+          ) : isClient ? (
+            <div className="sidebar-auth-actions">
+              <button className="auth-btn auth-btn-primary" onClick={() => handleNavigation('/auth/signup')}>
+                Sign up
+              </button>
+              <button className="auth-btn auth-btn-secondary" onClick={() => handleNavigation('/auth/signin')}>
+                Sign in
+              </button>
+            </div>
+          ) : null}
         </div>
       </aside>
     </>

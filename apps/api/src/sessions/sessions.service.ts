@@ -1,4 +1,6 @@
 import { Inject, Injectable, Logger, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { from } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { createHash } from 'node:crypto';
 import { JD_CHAR_CAP } from '@cotailor/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -24,9 +26,19 @@ export class SessionsService {
     @Inject(LLM_PROVIDER) private readonly llm: LLMProvider,
   ) {}
 
-  async create(profileId: string) {
+  // 404 (not 403) when the session belongs to someone else — don't leak that the id exists.
+  private async assertOwned(userId: string, id: string): Promise<void> {
+    const s = await this.prisma.tailoringSession.findUnique({ where: { id }, select: { userId: true } });
+    if (!s || s.userId !== userId) {
+      throw new NotFoundException({ error: 'not_found', message: 'Session not found' });
+    }
+  }
+
+  async create(userId: string, profileId: string) {
     const profile = await this.prisma.profile.findUnique({ where: { id: profileId } });
-    if (!profile) throw new NotFoundException({ error: 'not_found', message: 'Profile not found' });
+    if (!profile || profile.userId !== userId) {
+      throw new NotFoundException({ error: 'not_found', message: 'Profile not found' });
+    }
     const session = await this.prisma.tailoringSession.create({
       data: {
         userId: profile.userId,
@@ -41,16 +53,23 @@ export class SessionsService {
     return session;
   }
 
+  // Internal fetch — ownership is asserted at the controller-facing entry points.
   async get(id: string) {
     const s = await this.prisma.tailoringSession.findUnique({ where: { id }, include: { cards: true } });
     if (!s) throw new NotFoundException({ error: 'not_found', message: 'Session not found' });
     return s;
   }
 
+  async getOwned(userId: string, id: string) {
+    await this.assertOwned(userId, id);
+    return this.get(id);
+  }
+
   // Session history: newest first, with just enough joined data for the list
   // views (profile name, JD first line, detected role, card progress).
-  async list() {
+  async list(userId: string) {
     const sessions = await this.prisma.tailoringSession.findMany({
+      where: { userId },
       orderBy: { updatedAt: 'desc' },
       take: 50,
       include: {
@@ -76,14 +95,16 @@ export class SessionsService {
     }));
   }
 
-  cancel(id: string) {
+  async cancel(userId: string, id: string) {
+    await this.assertOwned(userId, id);
     return this.transitions.apply(id, 'CANCEL', 'SESSION_CANCELLED');
   }
 
   // APPROVE_STRATEGY is illegal before STRATEGY_REVIEW → 409 with allowed_actions.
   // Drives the full generation path: build the tailored resume (per-bullet
   // edits), persist it as a ResumeVersion, then validate → FINAL_READY.
-  async generate(id: string) {
+  async generate(userId: string, id: string) {
+    await this.assertOwned(userId, id);
     await this.transitions.apply(id, 'APPROVE_STRATEGY', 'GENERATE_REQUESTED');
     const built = await this.resumeBuilder.build(id);
     await this.saveResumeVersion(id, built, 'ai_generation');
@@ -125,7 +146,8 @@ export class SessionsService {
   }
 
   // A light strategy view derived from the answered decisions (no Strategy table).
-  async getStrategy(id: string) {
+  async getStrategy(userId: string, id: string) {
+    await this.assertOwned(userId, id);
     const session = await this.get(id);
     const decisions = await this.prisma.userDecision.findMany({ where: { sessionId: id } });
     const cards = await this.cards.listBySession(id);
@@ -146,7 +168,8 @@ export class SessionsService {
   // The tailored resume: the stored active version (so user edits persist),
   // built + persisted on first read for sessions generated before versioning.
   // The quality report is always re-linted fresh.
-  async getResume(id: string) {
+  async getResume(userId: string, id: string) {
+    await this.assertOwned(userId, id);
     const session = await this.get(id);
 
     let version = session.activeVersionId
@@ -176,14 +199,14 @@ export class SessionsService {
   }
 
   // Save user edits as a new version (full content replace, versioned).
-  async saveResume(id: string, content: Record<string, unknown>) {
+  async saveResume(userId: string, id: string, content: Record<string, unknown>) {
     if (!content || typeof content !== 'object' || !Array.isArray((content as any).workExperience)) {
       throw new UnprocessableEntityException({
         error: 'invalid_resume',
         message: 'Resume content with a workExperience array is required.',
       });
     }
-    await this.get(id); // 404 if the session doesn't exist
+    await this.assertOwned(userId, id);
     await this.saveResumeVersion(id, content, 'user_edit');
     const { qualityReport: _drop, ...rest } = content as any;
     return { ...rest, qualityReport: lintResume(rest.workExperience ?? [], rest.summary) };
@@ -195,11 +218,11 @@ export class SessionsService {
   // The rewrite is CONSTRAINED (must not start with any word in avoidOpeners,
   // must not use clichés/weak phrases) and then VERIFIED; on violation we retry
   // with explicit feedback so the fix can't just introduce a new problem.
-  async fixBullet(id: string, text: string, instruction: string, avoidOpeners: string[] = []) {
+  async fixBullet(userId: string, id: string, text: string, instruction: string, avoidOpeners: string[] = []) {
     if (!text?.trim()) {
       throw new UnprocessableEntityException({ error: 'invalid_bullet', message: 'Bullet text is required.' });
     }
-    await this.get(id);
+    await this.assertOwned(userId, id);
 
     const avoid = avoidOpeners.map((w) => w.trim().toLowerCase()).filter(Boolean);
     const constraints = [
@@ -245,7 +268,8 @@ export class SessionsService {
     return { text: last, verified: false };
   }
 
-  async submitJd(id: string, text: string) {
+  async submitJd(userId: string, id: string, text: string) {
+    await this.assertOwned(userId, id);
     if (!text || !text.trim()) {
       throw new UnprocessableEntityException({ error: 'unprocessable_jd', message: 'JD text is required.' });
     }
@@ -289,11 +313,13 @@ export class SessionsService {
     return this.get(id);
   }
 
-  listCards(id: string) {
+  async listCards(userId: string, id: string) {
+    await this.assertOwned(userId, id);
     return this.cards.listBySession(id);
   }
 
-  async answerCard(sessionId: string, cardId: string, optionId: string, note?: string) {
+  async answerCard(userId: string, sessionId: string, cardId: string, optionId: string, note?: string) {
+    await this.assertOwned(userId, sessionId);
     const card = await this.cards.getOrThrow(cardId);
     if (card.sessionId !== sessionId) {
       throw new NotFoundException({ error: 'not_found', message: 'Card not found in this session' });
@@ -371,7 +397,9 @@ export class SessionsService {
     this.events.emit(sessionId, 'strategy_ready', { state: 'STRATEGY_REVIEW' });
   }
 
-  stream(id: string) {
-    return this.events.stream(id);
+  // @Sse handlers must return an Observable synchronously, so the ownership
+  // check runs inside the stream; a failed check errors the SSE connection.
+  stream(userId: string, id: string) {
+    return from(this.assertOwned(userId, id)).pipe(switchMap(() => this.events.stream(id)));
   }
 }

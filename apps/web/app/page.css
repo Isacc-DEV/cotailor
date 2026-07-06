@@ -5,7 +5,7 @@
 
 /* Hero Section */
 .hero {
-  background: linear-gradient(135deg, var(--bg-primary) 0%, #0a0b11 100%);
+  background: var(--bg-primary);
   padding: 60px 24px;
   text-align: center;
   border-bottom: 1px solid var(--border-color);
@@ -18,8 +18,8 @@
 
 .hero-badge {
   display: inline-block;
-  background: linear-gradient(135deg, rgba(16, 163, 127, 0.1) 0%, rgba(16, 163, 127, 0.05) 100%);
-  color: var(--accent);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 0.85rem;
@@ -27,7 +27,7 @@
   margin-bottom: 16px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  border: 1px solid rgba(16, 163, 127, 0.2);
+  border: 1px solid var(--border-color);
 }
 
 .hero h1 {
@@ -134,7 +134,7 @@
   border-color: var(--accent);
   background: var(--card-hover-bg);
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(16, 163, 127, 0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .feature-icon {
@@ -158,7 +158,7 @@
 
 /* How It Works Section */
 .how-it-works {
-  background: linear-gradient(135deg, var(--bg-primary) 0%, #0a0b11 100%);
+  background: var(--bg-secondary);
   padding: 60px 24px;
   border-bottom: 1px solid var(--border-color);
 }
@@ -200,7 +200,7 @@
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+  background: var(--accent);
   color: white;
   border-radius: 50%;
   font-size: 1.3rem;
@@ -224,7 +224,7 @@
 
 /* CTA Section */
 .cta {
-  background: linear-gradient(135deg, rgba(16, 163, 127, 0.1) 0%, rgba(16, 163, 127, 0.05) 100%);
+  background: var(--bg-secondary);
   color: var(--text-primary);
   padding: 48px 24px;
   text-align: center;

@@ -23,9 +23,9 @@
 }
 
 .error-message {
-  background-color: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  color: #fca5a5;
+  background-color: var(--error-bg);
+  border: 1px solid var(--error-border);
+  color: var(--error);
   padding: 12px;
   border-radius: 6px;
   margin-bottom: 16px;
@@ -94,7 +94,7 @@
 .form-group input:hover,
 .form-group select:hover,
 .form-group textarea:hover {
-  border-color: var(--border-dark);
+  border-color: var(--border-light);
 }
 
 .form-group input:focus,
@@ -102,7 +102,7 @@
 .form-group textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.1);
+  box-shadow: var(--focus-ring);
 }
 
 .form-group input:disabled,
@@ -115,18 +115,18 @@
 .form-group input.error,
 .form-group select.error,
 .form-group textarea.error {
-  border-color: #dc2626;
+  border-color: var(--error);
 }
 
 .form-group input.error:focus,
 .form-group select.error:focus,
 .form-group textarea.error:focus {
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+  box-shadow: 0 0 0 2px var(--error-bg);
 }
 
 .error-text {
   font-size: 0.8rem;
-  color: #fca5a5;
+  color: var(--error);
   font-weight: 500;
 }
 

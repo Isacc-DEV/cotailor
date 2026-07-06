@@ -100,28 +100,20 @@ export default function ComponentName() {
 ## Styling Guidelines
 
 - **CSS Modules**: One `.css` file per page/component, co-located
-- **Dark Mode**: All styles support `@media (prefers-color-scheme: dark)` automatically
+- **Theme**: Light-only, ChatGPT-style — white surfaces, near-black text, light gray borders. Do NOT add `@media (prefers-color-scheme: dark)` blocks.
 - **Responsive**: Mobile-first design with breakpoint at `768px`
-- **Colors**: Use project palette (greens for success, reds for errors, grays for neutral)
+- **Colors**: Never hardcode hex/rgba values — use the tokens from `app/globals.css` (`--bg-*`, `--text-*`, `--border-*`, `--accent`, and the semantic `--success/--warning/--error` families). Color is reserved for semantic states; everything else is neutral.
 - **Spacing**: Use rem units, consistent 0.25rem base scale
 
 Example:
 
 ```css
-/* Light mode (default) */
 .component {
-  background: white;
-  color: #1c1c1c;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   padding: 1rem;
   border-radius: 0.5rem;
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .component {
-    background: #27251f;
-    color: #f5f5f4;
-  }
 }
 
 /* Mobile */

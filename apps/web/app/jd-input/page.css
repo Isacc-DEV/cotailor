@@ -75,7 +75,7 @@
 .jd-textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.15);
+  box-shadow: var(--focus-ring);
   background-color: var(--card-bg);
 }
 
@@ -93,11 +93,11 @@
 }
 
 .error-message {
-  background: linear-gradient(135deg, rgba(214, 69, 69, 0.1) 0%, rgba(220, 53, 69, 0.05) 100%);
-  border: 1px solid rgba(214, 69, 69, 0.3);
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
   border-radius: 10px;
   padding: 14px 16px;
-  color: #f78989;
+  color: var(--error);
   font-weight: 500;
   font-size: 0.9rem;
   animation: slideIn 0.2s ease-out;
@@ -122,7 +122,7 @@
 }
 
 .jd-help {
-  background: linear-gradient(135deg, rgba(26, 27, 38, 0.8) 0%, rgba(16, 163, 127, 0.05) 100%);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 16px;

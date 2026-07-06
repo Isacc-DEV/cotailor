@@ -4,22 +4,22 @@
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background: linear-gradient(135deg, #f5f5f4 0%, #ede9e6 100%);
+  background: var(--bg-secondary);
 }
 
 .error-container {
   max-width: 600px;
   text-align: center;
-  background: white;
+  background: var(--card-bg);
   border-radius: 1rem;
   padding: 3rem 2rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
 }
 
 .error-code {
   font-size: 4rem;
   font-weight: 700;
-  color: #dc2626;
+  color: var(--error);
   margin-bottom: 1rem;
   font-family: 'Monaco', 'Menlo', monospace;
   letter-spacing: -2px;
@@ -27,14 +27,14 @@
 
 .error-container h1 {
   font-size: 2rem;
-  color: #1c1c1c;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
   font-weight: 700;
 }
 
 .error-container > p {
   font-size: 1.05rem;
-  color: #78716f;
+  color: var(--text-secondary);
   margin-bottom: 2rem;
   line-height: 1.6;
 }
@@ -52,7 +52,7 @@
 }
 
 .error-suggestions {
-  background: #f9f8f7;
+  background: var(--bg-secondary);
   padding: 1.5rem;
   border-radius: 0.75rem;
   text-align: left;
@@ -61,7 +61,7 @@
 .error-suggestions h3 {
   margin: 0 0 1rem 0;
   font-size: 1rem;
-  color: #1c1c1c;
+  color: var(--text-primary);
   font-weight: 700;
 }
 
@@ -83,7 +83,7 @@
   background: none;
   border: none;
   padding: 0;
-  color: #059669;
+  color: var(--accent);
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;
@@ -91,48 +91,8 @@
 }
 
 .error-suggestions button:hover {
-  color: #0d753d;
+  color: var(--accent-hover);
   text-decoration: underline;
-}
-
-/* Dark Mode */
-@media (prefers-color-scheme: dark) {
-  .error-page {
-    background: linear-gradient(135deg, #1a1a19 0%, #27251f 100%);
-  }
-
-  .error-container {
-    background: #27251f;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-  }
-
-  .error-code {
-    color: #fca5a5;
-  }
-
-  .error-container h1 {
-    color: #f5f5f4;
-  }
-
-  .error-container > p {
-    color: #a8a39d;
-  }
-
-  .error-suggestions {
-    background: #44403c;
-  }
-
-  .error-suggestions h3 {
-    color: #f5f5f4;
-  }
-
-  .error-suggestions button {
-    color: #86efac;
-  }
-
-  .error-suggestions button:hover {
-    color: #6ee7b7;
-  }
 }
 
 /* Responsive */
