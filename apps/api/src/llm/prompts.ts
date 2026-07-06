@@ -78,15 +78,11 @@ BUCKETS:
   items from that area are already extracted.
 - certifications: named certifications only ("AWS Certified Solutions Architect",
   "PMP", "CPA", "BLS", "OSHA 10").
-- knockout_requirements: ONLY true hard gates, each {type, value, evidence_quote}
-  with type in [work_authorization, clearance, license, degree, location].
-  NEVER remote work, equipment, schedule, or availability.
 - all_keywords: deduplicated union of required + preferred + mentioned.
 
 Return JSON EXACTLY in this shape:
 {"required_skills": string[], "preferred_skills": string[], "mentioned_skills": string[],
  "certifications": string[],
- "knockout_requirements": [{"type": string, "value": string, "evidence_quote": string}],
  "all_keywords": string[]}
 
 EXAMPLE 1
@@ -98,7 +94,6 @@ JSON: {"required_skills":["Python","FastAPI","Flask","Pinecone","ChromaDB","AWS"
 "preferred_skills":["Docker","Kubernetes"],
 "mentioned_skills":["PHP","WordPress","Airflow","Data Pipelines"],
 "certifications":[],
-"knockout_requirements":[{"type":"work_authorization","value":"US work authorization","evidence_quote":"Must be authorized to work in the US."}],
 "all_keywords":["Python","FastAPI","Flask","Pinecone","ChromaDB","AWS","GCP","Azure","Docker","Kubernetes","PHP","WordPress","Airflow","Data Pipelines"]}
 
 EXAMPLE 2
@@ -109,7 +104,6 @@ JSON: {"required_skills":["SEO","Google Analytics","HubSpot","Email Marketing","
 "preferred_skills":["Figma","Google Ads","Meta Ads"],
 "mentioned_skills":["Slack","Notion"],
 "certifications":[],
-"knockout_requirements":[],
 "all_keywords":["SEO","Google Analytics","HubSpot","Email Marketing","A/B Testing","Figma","Google Ads","Meta Ads","Slack","Notion"]}
 
 Now extract from this job description:

@@ -3,12 +3,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { api } from '@/lib/api-client';
+import { formatRelativeTime } from '@/lib/format-time';
 import { AUTH_CHANGED_EVENT, clearAuth, getStoredUser, type AuthUser } from '@/lib/auth';
 import { routeForState } from '@/app/lib/session-routes';
+import ConfirmDialog from '@/app/components/ui/ConfirmDialog';
 import './sidebar.css';
 
 interface JDHistory {
   id: string;
+  profileId?: string;
   profileName: string;
   jdTitle?: string;
   state: string;
@@ -16,16 +19,23 @@ interface JDHistory {
   updatedAt: string;
 }
 
+interface ProfileLite {
+  id: string;
+  name: string;
+}
+
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [history, setHistory] = useState<JDHistory[]>([]);
+  const [profiles, setProfiles] = useState<ProfileLite[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<JDHistory | null>(null);
   const accountRef = useRef<HTMLDivElement>(null);
 
   // ChatGPT-style account popover: clicking anywhere else closes it.
@@ -58,6 +68,7 @@ export function Sidebar() {
   useEffect(() => {
     if (!isClient || !user) {
       setHistory([]);
+      setProfiles([]);
       return;
     }
 
@@ -65,11 +76,20 @@ export function Sidebar() {
     const fetchJDHistory = async () => {
       try {
         setLoading(true);
-        const data = await api.sessions.list();
+        const [data, profileList] = await Promise.all([
+          api.sessions.list(),
+          api.profiles.list().catch(() => []),
+        ]);
+        if (!stale) {
+          setProfiles(
+            (Array.isArray(profileList) ? profileList : []).map((p: any) => ({ id: p.id, name: p.name })),
+          );
+        }
         const jdHistory = (Array.isArray(data) ? data : [])
           .filter((session: any) => session.jdDocumentId) // Only show sessions with JD
           .map((session: any) => ({
             id: session.id,
+            profileId: session.profileId,
             profileName: session.profile?.name || 'Unnamed Profile',
             jdTitle: session.jdDocument?.text?.split('\n')[0]?.substring(0, 60) || 'Job Description',
             state: session.state,
@@ -105,6 +125,19 @@ export function Sidebar() {
   const handleSessionClick = (sessionId: string, state: string) => {
     router.push(routeForState(state, sessionId));
     setIsOpen(false);
+  };
+
+  const handleDeleteSession = async (item: JDHistory) => {
+    try {
+      await api.sessions.delete(item.id);
+      setHistory((prev) => prev.filter((s) => s.id !== item.id));
+      // The deleted session may be the one on screen — leave before it 404s.
+      if (currentSessionId === item.id) {
+        router.push('/jd-input');
+      }
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+    }
   };
 
   const handleSignOut = () => {
@@ -146,27 +179,35 @@ export function Sidebar() {
     return colors[state] || '';
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    } else if (diffDays === 1) {
-      return 'Yesterday';
-    } else if (diffDays < 7) {
-      return `${diffDays}d ago`;
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
-  };
-
   // Auth screens are the only places without the sidebar (ChatGPT-style shell).
   if (pathname?.startsWith('/auth')) return null;
 
   const displayName = user ? user.name || user.email : '';
+
+  // Up to 3 profiles for one-click session starts: most recently used first
+  // (from session history), padded with unused profiles. Hidden with fewer
+  // than 2 profiles — the JD page already defaults to the only one.
+  const profileById = new Map(profiles.map((p) => [p.id, p]));
+  const lastUsedProfileId = history.find((s) => s.profileId && profileById.has(s.profileId))?.profileId ?? null;
+  const recentProfiles: ProfileLite[] = [];
+  if (profiles.length >= 2) {
+    const seen = new Set<string>();
+    for (const s of history) {
+      if (recentProfiles.length === 3) break;
+      const p = s.profileId ? profileById.get(s.profileId) : undefined;
+      if (p && !seen.has(p.id)) {
+        seen.add(p.id);
+        recentProfiles.push(p);
+      }
+    }
+    for (const p of profiles) {
+      if (recentProfiles.length === 3) break;
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        recentProfiles.push(p);
+      }
+    }
+  }
 
   return (
     <>
@@ -196,6 +237,22 @@ export function Sidebar() {
             <button className="sidebar-nav-link nav-new-session" onClick={() => handleNavigation('/jd-input')}>
               <span className="nav-icon">+</span> New session
             </button>
+            {recentProfiles.map((p) => (
+              <button
+                key={p.id}
+                className="sidebar-nav-link nav-profile"
+                onClick={() => handleNavigation(`/jd-input?profileId=${p.id}`)}
+                title={`New session as ${p.name}`}
+              >
+                <span className="nav-profile-avatar">{p.name.charAt(0).toUpperCase()}</span>
+                <span className="nav-profile-name">{p.name}</span>
+                {p.id === lastUsedProfileId && (
+                  <span className="nav-profile-last" title="Last used">
+                    ✓
+                  </span>
+                )}
+              </button>
+            ))}
           </nav>
         )}
 
@@ -221,23 +278,35 @@ export function Sidebar() {
                 </div>
                 <div className="sessions-list">
                   {history.map((item) => (
-                    <button
+                    <div
                       key={item.id}
-                      className={`session-item ${currentSessionId === item.id ? 'active' : ''}`}
-                      onClick={() => handleSessionClick(item.id, item.state)}
-                      title={`${item.profileName} - ${item.jdTitle}`}
+                      className={`session-item-row ${currentSessionId === item.id ? 'active' : ''}`}
                     >
-                      <div className="session-item-content">
-                        <div className="session-title">{item.profileName}</div>
-                        <div className="session-subtitle">{item.jdTitle}</div>
-                        <div className="session-meta">
-                          <span className={`session-state ${getStateColor(item.state)}`}>
-                            {getStateLabel(item.state)}
-                          </span>
-                          <span className="session-time">{formatDate(item.updatedAt)}</span>
+                      <button
+                        className="session-item"
+                        onClick={() => handleSessionClick(item.id, item.state)}
+                        title={`${item.profileName} - ${item.jdTitle}`}
+                      >
+                        <div className="session-item-content">
+                          <div className="session-title">{item.profileName}</div>
+                          <div className="session-subtitle">{item.jdTitle}</div>
+                          <div className="session-meta">
+                            <span className={`session-state ${getStateColor(item.state)}`}>
+                              {getStateLabel(item.state)}
+                            </span>
+                            <span className="session-time">{formatRelativeTime(item.updatedAt)}</span>
+                          </div>
                         </div>
-                      </div>
-                    </button>
+                      </button>
+                      <button
+                        className="session-delete-btn"
+                        onClick={() => setDeleteTarget(item)}
+                        aria-label={`Delete session: ${item.jdTitle}`}
+                        title="Delete session"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   ))}
                 </div>
               </>
@@ -250,6 +319,16 @@ export function Sidebar() {
             <div className="account" ref={accountRef}>
               {accountMenuOpen && (
                 <div className="account-menu" role="menu">
+                  <button
+                    className="account-menu-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setAccountMenuOpen(false);
+                      handleNavigation('/profile-selector');
+                    }}
+                  >
+                    ❏ Profiles
+                  </button>
                   <button
                     className="account-menu-item"
                     role="menuitem"
@@ -297,6 +376,16 @@ export function Sidebar() {
           ) : null}
         </div>
       </aside>
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        title="Delete session?"
+        message="This permanently removes the session, its decisions, and any generated resume."
+        itemName={deleteTarget?.jdTitle}
+        confirmText="Delete"
+        onConfirm={() => deleteTarget && handleDeleteSession(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </>
   );
 }

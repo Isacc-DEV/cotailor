@@ -3,8 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Button, Badge, Spinner, Card } from '@/app/components/ui';
+import ConfirmDialog from '@/app/components/ui/ConfirmDialog';
 import { routeForState } from '@/app/lib/session-routes';
 import { api } from '@/lib/api-client';
+import { formatRelativeTime } from '@/lib/format-time';
 import './page.css';
 
 interface Session {
@@ -34,6 +36,8 @@ export default function SessionHistory() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'completed' | 'in_progress'>('all');
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Session | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -92,23 +96,17 @@ export default function SessionHistory() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      if (diffHours === 0) {
-        const diffMins = Math.floor(diffMs / (1000 * 60));
-        return `${diffMins}m ago`;
-      }
-      return `${diffHours}h ago`;
+  const handleDeleteSession = async (session: Session) => {
+    setDeletingId(session.id);
+    setError(null);
+    try {
+      await api.sessions.delete(session.id);
+      setSessions((prev) => prev.filter((s) => s.id !== session.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete session');
+    } finally {
+      setDeletingId(null);
     }
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
   };
 
   const handleResumeSession = (session: Session) => {
@@ -179,7 +177,7 @@ export default function SessionHistory() {
                 </div>
                 <div className="metadata-item">
                   <span className="metadata-label">Created</span>
-                  <span className="metadata-value">{formatDate(session.createdAt)}</span>
+                  <span className="metadata-value">{formatRelativeTime(session.createdAt)}</span>
                 </div>
                 {session.status === 'completed' && session.matchScore !== undefined && (
                   <div className="metadata-item">
@@ -239,11 +237,30 @@ export default function SessionHistory() {
                     Start New Session
                   </Button>
                 )}
+                <Button
+                  variant="danger"
+                  size="sm"
+                  className="delete-session-btn"
+                  loading={deletingId === session.id}
+                  onClick={() => setDeleteTarget(session)}
+                >
+                  Delete
+                </Button>
               </div>
             </Card>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        title="Delete session?"
+        message="This permanently removes the session, its decisions, and any generated resume."
+        itemName={deleteTarget?.jobTitle}
+        confirmText="Delete"
+        onConfirm={() => deleteTarget && handleDeleteSession(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

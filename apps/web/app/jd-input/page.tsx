@@ -20,6 +20,8 @@ export default function JDInput() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('sessionId');
+  // Explicit profile choice carried in from the sidebar's one-click profile rows.
+  const requestedProfileId = searchParams.get('profileId');
 
   const [jdText, setJdText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,11 +48,23 @@ export default function JDInput() {
     (async () => {
       try {
         setProfilesLoading(true);
-        const [list, session] = await Promise.all([
+        const [rawList, session, sessions] = await Promise.all([
           api.profiles.list(),
           sessionId ? api.sessions.get(sessionId).catch(() => null) : Promise.resolve(null),
+          api.sessions.list().catch(() => []),
         ]);
         if (stale) return;
+
+        // Most-likely profile first: order the picker by recent use (sessions
+        // arrive newest-first); never-used profiles keep their original order.
+        const lastUse = new Map<string, number>();
+        (Array.isArray(sessions) ? sessions : []).forEach((s: any, i: number) => {
+          if (s.profileId && !lastUse.has(s.profileId)) lastUse.set(s.profileId, i);
+        });
+        const list = [...rawList].sort(
+          (a: ProfileOption, b: ProfileOption) =>
+            (lastUse.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (lastUse.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+        );
 
         setProfiles(list);
         // A session can only accept a JD while in CREATED; otherwise we start fresh.
@@ -60,6 +74,7 @@ export default function JDInput() {
 
         const lastUsed = typeof window !== 'undefined' ? localStorage.getItem(LAST_PROFILE_KEY) : null;
         const preferred =
+          (requestedProfileId && list.find((p: ProfileOption) => p.id === requestedProfileId)?.id) ||
           (session?.profileId && list.find((p: ProfileOption) => p.id === session.profileId)?.id) ||
           (lastUsed && list.find((p: ProfileOption) => p.id === lastUsed)?.id) ||
           list[0]?.id ||
@@ -75,7 +90,7 @@ export default function JDInput() {
     return () => {
       stale = true;
     };
-  }, [router, sessionId]);
+  }, [router, sessionId, requestedProfileId]);
 
   useEffect(() => {
     if (!pickerOpen) return;

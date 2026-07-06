@@ -174,6 +174,12 @@ export const api = {
       return request<any>(`/sessions/${id}`);
     },
 
+    delete: async (id: string) => {
+      return request<{ deleted: boolean }>(`/sessions/${id}`, {
+        method: 'DELETE',
+      });
+    },
+
     submitJD: async (sessionId: string, jdText: string) => {
       return request<any>(`/sessions/${sessionId}/jd`, {
         method: 'POST',

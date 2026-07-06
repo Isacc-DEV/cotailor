@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, MessageEvent, Param, Post, Put, Sse } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, MessageEvent, Param, Post, Put, Sse } from '@nestjs/common';
 import type { Observable } from 'rxjs';
 import { SessionsService } from './sessions.service';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -21,6 +21,11 @@ export class SessionsController {
   @Get(':id')
   get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.sessions.getOwned(user.userId, id);
+  }
+
+  @Delete(':id')
+  remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.sessions.remove(user.userId, id);
   }
 
   @Post(':id/jd')

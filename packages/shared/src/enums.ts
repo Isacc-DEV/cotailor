@@ -30,7 +30,6 @@ export const CARD_TYPES = [
   'category_mismatch',
   'category_low_confidence',
   'subtype_mismatch',
-  'knockout_requirement',
   'missing_required_skill',
   'similar_skill',
   'certification_risk',

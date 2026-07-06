@@ -113,6 +113,7 @@ export class SessionsService {
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
       jdDocumentId: s.jdDocumentId,
+      profileId: s.profileId,
       profile: s.profile ? { name: s.profile.name } : null,
       // Only the first line is needed by the UI — don't ship whole JDs.
       jdDocument: s.jdDocument ? { text: s.jdDocument.text.slice(0, 200) } : null,
@@ -126,6 +127,27 @@ export class SessionsService {
   async cancel(userId: string, id: string) {
     await this.assertOwned(userId, id);
     return this.transitions.apply(id, 'CANCEL', 'SESSION_CANCELLED');
+  }
+
+  // Hard delete. init.sql creates no DB foreign keys, so the schema's
+  // onDelete: Cascade never fires — children must be removed explicitly,
+  // leaf tables first (also the safe order on an FK-enabled database).
+  async remove(userId: string, id: string) {
+    await this.assertOwned(userId, id);
+    await this.prisma.$transaction([
+      this.prisma.exportFile.deleteMany({ where: { version: { sessionId: id } } }),
+      this.prisma.resumeVersion.deleteMany({ where: { sessionId: id } }),
+      this.prisma.generatedResume.deleteMany({ where: { sessionId: id } }),
+      this.prisma.chatMessage.deleteMany({ where: { sessionId: id } }),
+      this.prisma.userDecision.deleteMany({ where: { sessionId: id } }),
+      this.prisma.decisionCard.deleteMany({ where: { sessionId: id } }),
+      this.prisma.skillMatch.deleteMany({ where: { sessionId: id } }),
+      this.prisma.jdAnalysis.deleteMany({ where: { sessionId: id } }),
+      this.prisma.resumeStrategy.deleteMany({ where: { sessionId: id } }),
+      this.prisma.auditLog.deleteMany({ where: { sessionId: id } }),
+      this.prisma.tailoringSession.delete({ where: { id } }),
+    ]);
+    return { deleted: true };
   }
 
   // APPROVE_STRATEGY is illegal before STRATEGY_REVIEW → 409 with allowed_actions.
@@ -371,21 +393,6 @@ export class SessionsService {
           void this.analysis
             .run(sessionId, { trustCategory: true, confirmedCategory: corrected })
             .catch((e: unknown) => this.recordAnalysisFailure(sessionId, e));
-        }
-        break;
-
-      case 'knockout_requirement':
-        if (optionId === 'cancel') {
-          await this.cards.markAnswered(cardId, sessionId, optionId, note);
-          await this.transitions.apply(sessionId, 'CANCEL', 'SESSION_CANCELLED');
-        } else {
-          await this.cards.markAnswered(
-            cardId,
-            sessionId,
-            optionId,
-            note,
-            optionId === 'meet' ? 'user_confirmed' : undefined,
-          );
         }
         break;
 

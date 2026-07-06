@@ -29,22 +29,14 @@ export type JdPrecheck = z.infer<typeof jdPrecheckSchema>;
 
 // #2 Skill Extraction Output (Section 9)
 // Focused shape: exhaustive skill/tool/platform keywords in three priority
-// buckets, plus certifications and hard-gate knockouts. Legacy descriptive
-// buckets are optional for backward compatibility with stored raw analyses.
+// buckets, plus certifications. Legacy descriptive buckets are optional for
+// backward compatibility with stored raw analyses.
 export const skillExtractionSchema = z.object({
   required_skills: z.array(z.string()),
   preferred_skills: z.array(z.string()),
   mentioned_skills: z.array(z.string()).optional(),
   all_keywords: z.array(z.string()).optional(),
   certifications: z.array(z.string()),
-  knockout_requirements: z.array(
-    z.object({
-      // Free-form; the backend gate applies a strict allowlist (GatesService).
-      type: z.string(),
-      value: z.string(),
-      evidence_quote: z.string(),
-    }),
-  ),
   // Legacy fields (older stored analyses) — no longer produced by extraction.
   tools: z.array(z.string()).optional(),
   technologies: z.array(z.string()).optional(),
@@ -74,7 +66,6 @@ export const decisionCardSchema = z.object({
     'category_mismatch',
     'category_low_confidence',
     'subtype_mismatch',
-    'knockout_requirement',
     'missing_required_skill',
     'similar_skill',
     'certification_risk',

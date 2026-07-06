@@ -177,6 +177,14 @@
   min-width: 120px;
 }
 
+/* Delete stays compact and right-aligned instead of stretching like the
+   primary actions. */
+.session-actions .delete-session-btn {
+  flex: 0 0 auto;
+  min-width: auto;
+  margin-left: auto;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .session-history {
