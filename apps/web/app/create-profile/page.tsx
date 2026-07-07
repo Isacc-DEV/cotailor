@@ -192,8 +192,16 @@ export default function CreateProfile() {
       </div>
 
       <div className="header-actions">
-        <label className="export-import-btn import-btn" title="Import a profile JSON export or a Word/PDF resume">
-          📤 {importing ? 'Importing...' : 'Import (JSON / Word / PDF)'}
+        <label
+          className={`export-import-btn import-btn ${importing ? 'is-disabled' : ''}`}
+          title="Import a profile JSON export or a Word/PDF resume"
+          aria-disabled={importing}
+        >
+          <span className="action-icon import-icon" aria-hidden="true" />
+          <span className="action-copy">
+            <span>{importing ? 'Importing...' : 'Import file'}</span>
+            <small>JSON, Word, or PDF</small>
+          </span>
           <input
             type="file"
             accept=".json,.docx,.pdf"
@@ -209,7 +217,11 @@ export default function CreateProfile() {
           disabled={importing}
           title="Paste profile JSON from clipboard"
         >
-          📌 {importing ? 'Pasting...' : 'Paste'}
+          <span className="action-icon paste-icon" aria-hidden="true" />
+          <span className="action-copy">
+            <span>{importing ? 'Pasting...' : 'Paste JSON'}</span>
+            <small>From clipboard</small>
+          </span>
         </button>
       </div>
 
@@ -448,13 +460,21 @@ export default function CreateProfile() {
           <Button
             type="button"
             variant="secondary"
-            size="lg"
+            size="md"
+            className="cancel-profile-btn"
             onClick={() => router.push('/profile-selector')}
             disabled={submitting}
           >
             Cancel
           </Button>
-          <Button type="submit" variant="primary" size="lg" loading={submitting} disabled={submitting}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            className="create-profile-btn"
+            loading={submitting}
+            disabled={submitting}
+          >
             Create Profile
           </Button>
         </div>

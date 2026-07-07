@@ -519,6 +519,109 @@
   background: var(--bg-tertiary);
 }
 
+.account-menu-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  color: var(--text-secondary);
+}
+
+.account-menu-item:hover .account-menu-icon {
+  color: var(--text-primary);
+}
+
+.icon-profiles::before {
+  content: '';
+  width: 13px;
+  height: 11px;
+  border: 1.7px solid currentColor;
+  border-radius: 4px;
+  transform: translate(1px, 1px);
+}
+
+.icon-profiles::after {
+  content: '';
+  position: absolute;
+  width: 13px;
+  height: 11px;
+  border: 1.7px solid currentColor;
+  border-radius: 4px;
+  transform: translate(-2px, -2px);
+  background: var(--card-bg);
+}
+
+.account-menu-item:hover .icon-profiles::after {
+  background: var(--bg-tertiary);
+}
+
+.icon-settings::before {
+  content: '';
+  width: 13px;
+  height: 13px;
+  border: 2px dotted currentColor;
+  border-radius: 50%;
+}
+
+.icon-settings::after {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border: 1.7px solid currentColor;
+  border-radius: 50%;
+  background: var(--card-bg);
+}
+
+.account-menu-item:hover .icon-settings::after {
+  background: var(--bg-tertiary);
+}
+
+.icon-manage::before {
+  content: '';
+  width: 13px;
+  height: 15px;
+  background: currentColor;
+  clip-path: polygon(50% 0, 88% 15%, 78% 72%, 50% 100%, 22% 72%, 12% 15%);
+}
+
+.icon-manage::after {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 2px;
+  border-left: 1.7px solid var(--card-bg);
+  border-bottom: 1.7px solid var(--card-bg);
+  transform: rotate(-45deg) translate(-1px, -1px);
+}
+
+.account-menu-item:hover .icon-manage::after {
+  border-color: var(--bg-tertiary);
+}
+
+.icon-signout::before {
+  content: '';
+  width: 10px;
+  height: 12px;
+  border: 1.7px solid currentColor;
+  border-right: 0;
+  border-radius: 4px 0 0 4px;
+  transform: translateX(-2px);
+}
+
+.icon-signout::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-top: 1.8px solid currentColor;
+  border-right: 1.8px solid currentColor;
+  transform: translate(3px, 0) rotate(45deg);
+}
+
 .account-menu-divider {
   height: 1px;
   background: var(--border-color);

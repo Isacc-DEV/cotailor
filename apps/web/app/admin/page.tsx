@@ -49,22 +49,27 @@ export default function AdminDashboard() {
 
       <div className="admin-stat-grid">
         <div className="admin-stat-card">
+          <span className="admin-stat-icon users-icon" aria-hidden="true" />
           <div className="admin-stat-value">{stats.users.total}</div>
           <div className="admin-stat-label">Users ({stats.users.admins} admin{stats.users.admins === 1 ? '' : 's'})</div>
         </div>
         <div className="admin-stat-card">
+          <span className="admin-stat-icon pending-icon" aria-hidden="true" />
           <div className="admin-stat-value">{stats.users.pending}</div>
           <div className="admin-stat-label">Pending approval</div>
         </div>
         <div className="admin-stat-card">
+          <span className="admin-stat-icon suspended-icon" aria-hidden="true" />
           <div className="admin-stat-value">{stats.users.suspended}</div>
           <div className="admin-stat-label">Suspended</div>
         </div>
         <div className="admin-stat-card">
+          <span className="admin-stat-icon profiles-icon" aria-hidden="true" />
           <div className="admin-stat-value">{stats.profiles.total}</div>
           <div className="admin-stat-label">Profiles</div>
         </div>
         <div className="admin-stat-card">
+          <span className="admin-stat-icon sessions-icon" aria-hidden="true" />
           <div className="admin-stat-value">{stats.sessions.total}</div>
           <div className="admin-stat-label">Sessions ({finished} finished)</div>
         </div>

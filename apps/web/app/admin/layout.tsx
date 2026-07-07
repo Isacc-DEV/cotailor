@@ -43,24 +43,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="admin-shell">
-      <nav className="admin-nav">
-        <div className="admin-nav-title">Manage</div>
-        {navItems.map((item) => {
-          const active = item.exact ? pathname === item.href : pathname?.startsWith(item.href);
-          return (
-            <button
-              key={item.href}
-              className={`admin-nav-link ${active ? 'active' : ''}`}
-              onClick={() => router.push(item.href)}
-            >
-              {item.label}
-            </button>
-          );
-        })}
-        <div className="admin-nav-soon" title="Coming soon">
-          Settings <span className="soon-badge">soon</span>
+      <aside className="admin-nav" aria-label="Admin navigation">
+        <div className="admin-nav-content">
+          <div className="admin-nav-section">
+            <div className="admin-nav-title">Manage</div>
+            {navItems.map((item) => {
+              const active = item.exact ? pathname === item.href : pathname?.startsWith(item.href);
+              return (
+                <button
+                  key={item.href}
+                  className={`admin-nav-link ${active ? 'active' : ''}`}
+                  onClick={() => router.push(item.href)}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </nav>
+      </aside>
       <main className="admin-content">{children}</main>
     </div>
   );

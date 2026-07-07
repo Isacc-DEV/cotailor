@@ -642,13 +642,17 @@ export default function ResumePreview() {
       <div className="resume-toolbar">
         <h1>Your Tailored Resume</h1>
         <div className="resume-toolbar-actions">
-          <Button variant="secondary" onClick={() => router.push(`/strategy-review?sessionId=${sessionId}`)}>
+          <Button
+            variant="secondary"
+            className="resume-toolbar-btn"
+            onClick={() => router.push(`/strategy-review?sessionId=${sessionId}`)}
+          >
             Back
           </Button>
-          <Button variant="secondary" onClick={downloadJson}>
+          <Button variant="secondary" className="resume-toolbar-btn" onClick={downloadJson}>
             Download JSON
           </Button>
-          <Button variant="primary" onClick={exportPdf}>
+          <Button variant="primary" className="resume-toolbar-btn primary" onClick={exportPdf}>
             Export PDF
           </Button>
         </div>
