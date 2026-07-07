@@ -21,6 +21,8 @@ CREATE TYPE "ExportFormat" AS ENUM ('docx','pdf','txt');
 CREATE TYPE "CategoryRelationKind" AS ENUM ('same','adjacent','distinct');
 CREATE TYPE "Role" AS ENUM ('user','admin');
 CREATE TYPE "UserStatus" AS ENUM ('pending','active','suspended');
+CREATE TYPE "ThemePref" AS ENUM ('light','dark','system');
+CREATE TYPE "AiProviderMode" AS ENUM ('cotailor','own_keys');
 
 -- ===== Tables =====
 CREATE TABLE "User" (
@@ -30,6 +32,8 @@ CREATE TABLE "User" (
   "passwordHash" TEXT,
   "role" "Role" NOT NULL DEFAULT 'user',
   "status" "UserStatus" NOT NULL DEFAULT 'pending',
+  "theme" "ThemePref" NOT NULL DEFAULT 'system',
+  "aiProviderMode" "AiProviderMode" NOT NULL DEFAULT 'cotailor',
   "verifiedAt" TIMESTAMP(3),
   "disabledAt" TIMESTAMP(3),
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

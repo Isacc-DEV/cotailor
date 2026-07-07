@@ -20,7 +20,7 @@
 
 .btn-primary {
   background: var(--accent);
-  color: #ffffff;
+  color: var(--accent-contrast);
 }
 
 .btn-primary:hover:not(:disabled) {

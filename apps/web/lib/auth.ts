@@ -6,6 +6,8 @@ export interface AuthUser {
   email: string;
   name: string | null;
   role?: 'user' | 'admin';
+  theme?: 'light' | 'dark' | 'system';
+  aiProviderMode?: 'cotailor' | 'own_keys';
 }
 
 const TOKEN_KEY = 'auth_token';
@@ -35,6 +37,15 @@ export function getStoredUser(): AuthUser | null {
 export function setAuth(token: string, user: AuthUser) {
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+  emitChange();
+}
+
+// Merge a partial update into the stored user (e.g. after editing name/theme in
+// Settings) so the sidebar and other AUTH_CHANGED_EVENT listeners re-render.
+export function updateStoredUser(patch: Partial<AuthUser>) {
+  const current = getStoredUser();
+  if (!current) return;
+  localStorage.setItem(USER_KEY, JSON.stringify({ ...current, ...patch }));
   emitChange();
 }
 

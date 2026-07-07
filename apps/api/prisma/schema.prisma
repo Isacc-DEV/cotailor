@@ -123,19 +123,35 @@ enum UserStatus {
   suspended
 }
 
+// User-selected UI theme; `system` follows the OS prefers-color-scheme.
+enum ThemePref {
+  light
+  dark
+  system
+}
+
+// Where LLM credentials come from. `own_keys` (BYO) is not yet enabled in the
+// UI — the option is shown disabled until per-user key storage lands.
+enum AiProviderMode {
+  cotailor
+  own_keys
+}
+
 model User {
-  id           String             @id @default(cuid())
-  email        String             @unique
-  name         String?
-  passwordHash String?
-  role         Role               @default(user)
-  status       UserStatus         @default(pending)
-  verifiedAt   DateTime? // when an admin approved the account
-  disabledAt   DateTime? // when the current suspension started
-  createdAt    DateTime           @default(now())
-  profiles     Profile[]
-  sessions     TailoringSession[]
-  auditLogs    AuditLog[]
+  id             String             @id @default(cuid())
+  email          String             @unique
+  name           String?
+  passwordHash   String?
+  role           Role               @default(user)
+  status         UserStatus         @default(pending)
+  theme          ThemePref          @default(system)
+  aiProviderMode AiProviderMode     @default(cotailor)
+  verifiedAt     DateTime? // when an admin approved the account
+  disabledAt     DateTime? // when the current suspension started
+  createdAt      DateTime           @default(now())
+  profiles       Profile[]
+  sessions       TailoringSession[]
+  auditLogs      AuditLog[]
 }
 
 model Profile {

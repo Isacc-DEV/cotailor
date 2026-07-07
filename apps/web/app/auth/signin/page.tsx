@@ -50,7 +50,14 @@ export default function SignIn() {
         email: formData.email,
         password: formData.password,
       });
-      setAuth(data.token, { id: data.userId, email: data.email, name: data.name || data.email, role: data.role });
+      setAuth(data.token, {
+        id: data.userId,
+        email: data.email,
+        name: data.name || data.email,
+        role: data.role,
+        theme: data.theme,
+        aiProviderMode: data.aiProviderMode,
+      });
 
       router.push('/profile-selector');
     } catch (err) {

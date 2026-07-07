@@ -2,256 +2,369 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/app/components/ui';
+import { Button, ConfirmDialog } from '@/app/components/ui';
+import { api } from '@/lib/api-client';
+import { clearAuth, getStoredUser, getToken, updateStoredUser } from '@/lib/auth';
+import { applyTheme, type ThemePref } from '@/lib/theme';
 import './page.css';
 
-interface UserSettings {
-  aiProvider: string;
-  aiApiKey: string;
-}
+type AiProviderMode = 'cotailor' | 'own_keys';
+
+const THEME_OPTIONS: { value: ThemePref; label: string; icon: string }[] = [
+  { value: 'light', label: 'Light', icon: '☀️' },
+  { value: 'dark', label: 'Dark', icon: '🌙' },
+  { value: 'system', label: 'System', icon: '🖥️' },
+];
 
 export default function Settings() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [settings, setSettings] = useState<UserSettings>({
-    aiProvider: 'claude',
-    aiApiKey: '',
-  });
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [showApiKey, setShowApiKey] = useState(false);
+  const [email, setEmail] = useState('');
+
+  // Account
+  const [name, setName] = useState('');
+  const [savedName, setSavedName] = useState('');
+  const [savingName, setSavingName] = useState(false);
+
+  // Appearance
+  const [theme, setTheme] = useState<ThemePref>('system');
+
+  // AI provider
+  const [aiMode, setAiMode] = useState<AiProviderMode>('cotailor');
+
+  // Change password
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [pwMsg, setPwMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Danger zone
+  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
+
+  const [banner, setBanner] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const flash = (type: 'success' | 'error', text: string) => {
+    setBanner({ type, text });
+    setTimeout(() => setBanner(null), 3500);
+  };
 
   useEffect(() => {
     setIsClient(true);
-    const authToken = localStorage.getItem('auth_token');
-    const userStr = localStorage.getItem('user');
-
-    if (!authToken || !userStr) {
+    if (!getToken() || !getStoredUser()) {
       router.push('/auth/signin');
       return;
     }
 
-    setUser(JSON.parse(userStr));
-
-    // Load settings from localStorage
-    const savedSettings = localStorage.getItem('ai_settings');
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
+    // Seed from the cached user for an instant paint, then reconcile with the
+    // server (the source of truth for theme / provider mode).
+    const cached = getStoredUser();
+    if (cached) {
+      setEmail(cached.email);
+      setName(cached.name ?? '');
+      setSavedName(cached.name ?? '');
+      if (cached.theme) setTheme(cached.theme);
+      if (cached.aiProviderMode) setAiMode(cached.aiProviderMode);
     }
+
+    api.auth
+      .me()
+      .then((me) => {
+        setEmail(me.email);
+        setName(me.name ?? '');
+        setSavedName(me.name ?? '');
+        setTheme(me.theme);
+        setAiMode(me.aiProviderMode);
+        updateStoredUser({ name: me.name, theme: me.theme, aiProviderMode: me.aiProviderMode });
+      })
+      .catch(() => {
+        /* keep cached values; api-client already handles 401 sign-out */
+      });
   }, [router]);
 
-  const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSettings({ ...settings, aiProvider: e.target.value });
-  };
-
-  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSettings({ ...settings, aiApiKey: e.target.value });
-  };
-
-  const handleSave = async () => {
-    if (!settings.aiProvider) {
-      setMessage({ type: 'error', text: 'Please select an AI provider' });
-      return;
-    }
-
-    if (!settings.aiApiKey) {
-      setMessage({ type: 'error', text: 'Please enter your API key' });
-      return;
-    }
-
-    setLoading(true);
+  const handleSaveName = async () => {
+    const trimmed = name.trim();
+    setSavingName(true);
     try {
-      // Save to localStorage
-      localStorage.setItem('ai_settings', JSON.stringify(settings));
-      setMessage({ type: 'success', text: 'Settings saved successfully!' });
-
-      // Clear message after 3 seconds
-      setTimeout(() => setMessage(null), 3000);
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to save settings' });
+      const me = await api.auth.updateMe({ name: trimmed });
+      setName(me.name ?? '');
+      setSavedName(me.name ?? '');
+      updateStoredUser({ name: me.name });
+      flash('success', 'Name updated.');
+    } catch (err: any) {
+      flash('error', err?.message || 'Could not update name.');
     } finally {
-      setLoading(false);
+      setSavingName(false);
     }
   };
 
-  const handleReset = () => {
-    setSettings({ aiProvider: 'claude', aiApiKey: '' });
-    localStorage.removeItem('ai_settings');
-    setMessage({ type: 'success', text: 'Settings reset to defaults' });
-    setTimeout(() => setMessage(null), 3000);
+  const handleThemeChange = async (next: ThemePref) => {
+    const previous = theme;
+    setTheme(next);
+    applyTheme(next); // optimistic: reflect immediately
+    updateStoredUser({ theme: next });
+    try {
+      await api.auth.updateMe({ theme: next });
+    } catch (err: any) {
+      setTheme(previous);
+      applyTheme(previous);
+      updateStoredUser({ theme: previous });
+      flash('error', err?.message || 'Could not save theme.');
+    }
   };
 
-  if (!isClient || !user) {
+  const handleChangePassword = async () => {
+    setPwMsg(null);
+    if (!currentPassword) {
+      setPwMsg({ type: 'error', text: 'Enter your current password.' });
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPwMsg({ type: 'error', text: 'New password must be at least 8 characters.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwMsg({ type: 'error', text: 'New passwords do not match.' });
+      return;
+    }
+    if (newPassword === currentPassword) {
+      setPwMsg({ type: 'error', text: 'New password must be different from the current one.' });
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await api.auth.changePassword({ currentPassword, newPassword });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPwMsg({ type: 'success', text: 'Password changed.' });
+    } catch (err: any) {
+      setPwMsg({ type: 'error', text: err?.message || 'Could not change password.' });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleDeactivate = async () => {
+    setDeactivating(true);
+    try {
+      await api.auth.deactivate();
+      clearAuth();
+      router.push('/');
+    } catch (err: any) {
+      flash('error', err?.message || 'Could not deactivate account.');
+      setDeactivating(false);
+    }
+  };
+
+  if (!isClient) {
     return <div className="spinner">Loading...</div>;
   }
+
+  const nameDirty = name.trim() !== savedName.trim();
 
   return (
     <div className="settings-container">
       <div className="settings-header">
         <h1>Settings</h1>
-        <p>Configure your AI provider and API credentials</p>
+        <p>Manage your account, appearance, and AI preferences</p>
       </div>
 
-      {message && (
-        <div className={`message message-${message.type}`}>
-          {message.text}
-        </div>
-      )}
+      {banner && <div className={`message message-${banner.type}`}>{banner.text}</div>}
 
       <div className="settings-content">
-        <div className="settings-section">
-          <h2>AI Provider Configuration</h2>
+        {/* ===== Account ===== */}
+        <section className="settings-section">
+          <h2>Account</h2>
+          <p className="section-subtitle">Your identity across CoTailor.</p>
+
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input id="email" type="email" value={email} readOnly className="readonly-input" />
+            <p className="field-help">Your email can’t be changed. Contact an admin if it’s wrong.</p>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="name">Display name</label>
+            <div className="inline-field">
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                maxLength={120}
+                disabled={savingName}
+              />
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleSaveName}
+                disabled={!nameDirty || savingName}
+                loading={savingName}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== Change password ===== */}
+        <section className="settings-section">
+          <h2>Change password</h2>
+          <p className="section-subtitle">Use at least 8 characters. You’ll stay signed in.</p>
+
+          {pwMsg && <div className={`message message-${pwMsg.type} inline-message`}>{pwMsg.text}</div>}
+
+          <div className="form-group">
+            <label htmlFor="current-password">Current password</label>
+            <input
+              id="current-password"
+              type={showPasswords ? 'text' : 'password'}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              autoComplete="current-password"
+              disabled={changingPassword}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="new-password">New password</label>
+            <input
+              id="new-password"
+              type={showPasswords ? 'text' : 'password'}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+              disabled={changingPassword}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="confirm-password">Confirm new password</label>
+            <input
+              id="confirm-password"
+              type={showPasswords ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+              disabled={changingPassword}
+            />
+          </div>
+
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={showPasswords}
+              onChange={(e) => setShowPasswords(e.target.checked)}
+            />
+            Show passwords
+          </label>
+
+          <div className="section-actions">
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleChangePassword}
+              disabled={changingPassword}
+              loading={changingPassword}
+            >
+              Update password
+            </Button>
+          </div>
+        </section>
+
+        {/* ===== Appearance ===== */}
+        <section className="settings-section">
+          <h2>Appearance</h2>
+          <p className="section-subtitle">Choose how CoTailor looks. “System” follows your device.</p>
+
+          <div className="theme-options" role="radiogroup" aria-label="Theme">
+            {THEME_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={theme === opt.value}
+                className={`theme-option ${theme === opt.value ? 'selected' : ''}`}
+                onClick={() => handleThemeChange(opt.value)}
+              >
+                <span className="theme-option-icon">{opt.icon}</span>
+                <span className="theme-option-label">{opt.label}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* ===== AI provider ===== */}
+        <section className="settings-section">
+          <h2>AI provider</h2>
           <p className="section-subtitle">
-            Each user brings their own AI provider credentials. This keeps costs transparent and under your control.
+            Choose which AI powers your tailoring. Bring-your-own keys are coming soon.
           </p>
 
-          {/* AI Provider Selection */}
-          <div className="form-group">
-            <label htmlFor="provider">AI Provider *</label>
-            <select
-              id="provider"
-              value={settings.aiProvider}
-              onChange={handleProviderChange}
-              className="provider-select"
-              disabled={loading}
-            >
-              <option value="">-- Select Provider --</option>
-              <option value="claude">Claude (Anthropic)</option>
-              <option value="openai">OpenAI (GPT-4)</option>
-              <option value="gemini">Google Gemini</option>
-              <option value="local">Local LLM</option>
-            </select>
-            <p className="field-help">
-              Choose your preferred AI provider. You'll need an API key from the provider.
-            </p>
-          </div>
-
-          {/* API Key Input */}
-          <div className="form-group">
-            <label htmlFor="api-key">API Key *</label>
-            <div className="api-key-input-wrapper">
+          <div className="radio-cards">
+            <label className={`radio-card ${aiMode === 'cotailor' ? 'selected' : ''}`}>
               <input
-                id="api-key"
-                type={showApiKey ? 'text' : 'password'}
-                value={settings.aiApiKey}
-                onChange={handleApiKeyChange}
-                placeholder={`Enter your ${settings.aiProvider || 'API'} key`}
-                className="api-key-input"
-                disabled={loading}
+                type="radio"
+                name="ai-provider"
+                checked={aiMode === 'cotailor'}
+                onChange={() => setAiMode('cotailor')}
               />
-              <button
-                type="button"
-                className="toggle-visibility"
-                onClick={() => setShowApiKey(!showApiKey)}
-                title={showApiKey ? 'Hide' : 'Show'}
-              >
-                {showApiKey ? '👁️' : '👁️‍🗨️'}
-              </button>
-            </div>
-            <p className="field-help">
-              Your API key is stored locally in your browser. Never shared with our servers.
-            </p>
+              <div className="radio-card-body">
+                <div className="radio-card-title">Use CoTailor’s AI</div>
+                <div className="radio-card-desc">
+                  We handle the AI for you — nothing to configure. Recommended.
+                </div>
+              </div>
+            </label>
+
+            <label className="radio-card disabled" aria-disabled="true">
+              <input type="radio" name="ai-provider" disabled checked={false} readOnly />
+              <div className="radio-card-body">
+                <div className="radio-card-title">
+                  Use your own API keys <span className="soon-badge">Coming soon</span>
+                </div>
+                <div className="radio-card-desc">
+                  Bring your own provider credentials for full cost control. Not available yet.
+                </div>
+              </div>
+            </label>
           </div>
+        </section>
 
-          {/* Provider-Specific Help */}
-          {settings.aiProvider === 'claude' && (
-            <div className="help-box">
-              <h4>Claude Setup</h4>
-              <p>
-                Get your API key from{' '}
-                <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer">
-                  console.anthropic.com
-                </a>
-              </p>
-              <p>Key format: sk-ant-...</p>
-            </div>
-          )}
-
-          {settings.aiProvider === 'openai' && (
-            <div className="help-box">
-              <h4>OpenAI Setup</h4>
-              <p>
-                Get your API key from{' '}
-                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">
-                  platform.openai.com/api-keys
-                </a>
-              </p>
-              <p>Key format: sk-...</p>
-            </div>
-          )}
-
-          {settings.aiProvider === 'gemini' && (
-            <div className="help-box">
-              <h4>Google Gemini Setup</h4>
-              <p>
-                Get your API key from{' '}
-                <a href="https://ai.google.dev/tutorials/setup" target="_blank" rel="noopener noreferrer">
-                  ai.google.dev
-                </a>
+        {/* ===== Danger zone ===== */}
+        <section className="settings-section danger-zone">
+          <h2>Danger zone</h2>
+          <div className="danger-row">
+            <div className="danger-copy">
+              <div className="danger-title">Deactivate account</div>
+              <p className="field-help">
+                Signs you out and disables your account. An administrator can reactivate it later.
               </p>
             </div>
-          )}
-
-          {settings.aiProvider === 'local' && (
-            <div className="help-box">
-              <h4>Local LLM Setup</h4>
-              <p>Point to your local LLM endpoint (e.g., Ollama, LM Studio)</p>
-              <p>Example: http://localhost:11434</p>
-            </div>
-          )}
-        </div>
-
-        {/* Account Info */}
-        <div className="settings-section account-info">
-          <h2>Account</h2>
-          <p className="section-subtitle">Signed-in workspace details for this browser session.</p>
-
-          <div className="account-rows">
-            <div className="account-row">
-              <span className="account-row-label">Email</span>
-              <span className="account-row-value account-email">{user?.email}</span>
-            </div>
-            <div className="account-row">
-              <span className="account-row-label">Access</span>
-              <span className="account-row-value">{user?.role === 'admin' ? 'Admin' : 'User'}</span>
-            </div>
-            <div className="account-row">
-              <span className="account-row-label">Status</span>
-              <span className="account-row-value">Active</span>
-            </div>
+            <Button
+              variant="danger"
+              size="md"
+              onClick={() => setConfirmDeactivate(true)}
+              disabled={deactivating}
+              loading={deactivating}
+            >
+              Deactivate
+            </Button>
           </div>
-        </div>
+        </section>
       </div>
 
-      {/* Actions */}
-      <div className="settings-actions">
-        <Button
-          variant="primary"
-          size="md"
-          onClick={handleSave}
-          disabled={loading}
-          loading={loading}
-        >
-          Save Settings
-        </Button>
-        <Button
-          variant="secondary"
-          size="md"
-          onClick={handleReset}
-          disabled={loading}
-        >
-          Reset to Defaults
-        </Button>
-        <Button
-          variant="secondary"
-          size="md"
-          onClick={() => router.push('/profile-selector')}
-          disabled={loading}
-        >
-          Back to Profiles
-        </Button>
-      </div>
+      <ConfirmDialog
+        isOpen={confirmDeactivate}
+        title="Deactivate your account?"
+        message="You’ll be signed out immediately and won’t be able to sign in until an administrator reactivates your account. Your profiles and sessions are kept."
+        confirmText="Deactivate"
+        onConfirm={handleDeactivate}
+        onCancel={() => setConfirmDeactivate(false)}
+      />
     </div>
   );
 }
