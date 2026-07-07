@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, useCallback, Fragment, type ReactNode } from 'react';
+import { useEffect, useState, useCallback, useRef, Fragment, type ReactNode } from 'react';
 import { Button, Spinner, Badge } from '@/app/components/ui';
 import { formatDateRange } from '@/app/lib/date-format';
 import { api } from '@/lib/api-client';
@@ -156,6 +156,7 @@ export default function ResumePreview() {
   const [fixAllProgress, setFixAllProgress] = useState<{ done: number; total: number } | null>(null);
   const [review, setReview] = useState<FixAllReview | null>(null);
   const [styleCfg, setStyleCfg] = useState<StyleConfig | null>(null);
+  const resumeDocRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(async () => {
     if (!sessionId) return;
@@ -392,20 +393,62 @@ export default function ResumePreview() {
     URL.revokeObjectURL(url);
   };
 
-  // Print-to-PDF: the @media print stylesheet strips everything except the
-  // resume document. Temporarily set the tab title so the suggested PDF
-  // filename is "<Name>-Resume".
-  const exportPdf = () => {
-    const prev = document.title;
-    const name = String(resume?.header?.name || 'Resume').trim().replace(/\s+/g, '-');
-    document.title = `${name}-Resume`;
-    const restore = () => {
-      document.title = prev;
-      window.removeEventListener('afterprint', restore);
-    };
-    window.addEventListener('afterprint', restore);
-    window.print();
-  };
+  const exportPdf = () =>
+    withBusy('export-pdf', async () => {
+      if (!resumeDocRef.current) return;
+
+      const html2pdfModule = await import('html2pdf.js');
+      const html2pdf = html2pdfModule.default ?? html2pdfModule;
+      const name = String(resume?.header?.name || 'Resume').trim().replace(/\s+/g, '-');
+      const cloneEl = resumeDocRef.current.cloneNode(true) as HTMLElement;
+      cloneEl.classList.add('pdf-export-doc');
+
+      cloneEl
+        .querySelectorAll('.bullet-actions, .bullet-tag, .bullet-before, .bullet-editor, .be-ai-hint, .badge')
+        .forEach((node) => node.remove());
+
+      const host = document.createElement('div');
+      host.className = 'pdf-export-host';
+      host.appendChild(cloneEl);
+      document.body.appendChild(host);
+
+      try {
+        await html2pdf()
+          .set({
+            filename: `${name || 'Resume'}-Resume.pdf`,
+            margin: [0.45, 0.55, 0.45, 0.55],
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+              scale: 2,
+              useCORS: true,
+              backgroundColor: '#ffffff',
+              scrollX: 0,
+              scrollY: 0,
+            },
+            jsPDF: {
+              unit: 'in',
+              format: 'letter',
+              orientation: 'portrait',
+              compress: true,
+            },
+            pagebreak: {
+              mode: ['css', 'legacy'],
+              avoid: [
+                '.resume-doc-header',
+                '.resume-section-title',
+                '.resume-exp-head',
+                '.resume-exp-pos',
+                '.resume-bullets li',
+                '.resume-certs li',
+              ],
+            },
+          })
+          .from(cloneEl)
+          .save();
+      } finally {
+        host.remove();
+      }
+    });
 
   if (!sessionId) return null;
   if (error && !resume) {
@@ -652,8 +695,8 @@ export default function ResumePreview() {
           <Button variant="secondary" className="resume-toolbar-btn" onClick={downloadJson}>
             Download JSON
           </Button>
-          <Button variant="primary" className="resume-toolbar-btn primary" onClick={exportPdf}>
-            Export PDF
+          <Button variant="primary" className="resume-toolbar-btn primary" onClick={exportPdf} disabled={busy !== null}>
+            {busy === 'export-pdf' ? 'Exporting...' : 'Export PDF'}
           </Button>
         </div>
       </div>
@@ -750,6 +793,7 @@ export default function ResumePreview() {
 
       <div className="resume-main">
       <div
+        ref={resumeDocRef}
         className={`resume-doc${styleCfg ? ` ${styleClasses(styleCfg)}` : ''}`}
         style={styleCfg ? styleVars(styleCfg) : undefined}
       >

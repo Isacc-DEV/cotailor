@@ -526,6 +526,99 @@
 .resume-certs { margin: 0; padding-left: 1.2rem; }
 .resume-certs li { font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 0.2rem; }
 
+.pdf-export-host {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 7.4in;
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.pdf-export-doc {
+  width: 7.4in;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+.pdf-export-doc,
+.pdf-export-doc * {
+  background: transparent !important;
+  color: #000000 !important;
+}
+
+.pdf-export-doc .resume-doc-header {
+  margin-bottom: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  border-bottom: 2px solid #000000 !important;
+}
+
+.pdf-export-doc .resume-doc-header h2 {
+  font-size: 1.45rem !important;
+}
+
+.pdf-export-doc .resume-title,
+.pdf-export-doc .resume-contact {
+  margin: 0.12rem 0 0 !important;
+}
+
+.pdf-export-doc section {
+  margin: 0 !important;
+  padding: 0 !important;
+  break-inside: auto;
+}
+
+.pdf-export-doc .resume-section-title {
+  margin: 0.28rem 0 0.18rem !important;
+  padding-bottom: 0.12rem !important;
+  border-bottom: 1px solid #888888 !important;
+  break-after: avoid !important;
+  page-break-after: avoid !important;
+}
+
+.pdf-export-doc .resume-summary-text,
+.pdf-export-doc .resume-skills {
+  margin: 0 !important;
+  line-height: 1.32 !important;
+}
+
+.pdf-export-doc .resume-exp {
+  margin: 0 0 0.28rem !important;
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+}
+
+.pdf-export-doc .resume-exp-pos {
+  margin: 0.04rem 0 0.16rem !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+
+.pdf-export-doc .resume-exp-head {
+  margin: 0 !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  break-after: avoid !important;
+  page-break-after: avoid !important;
+}
+
+.pdf-export-doc .resume-bullets,
+.pdf-export-doc .resume-certs {
+  margin: 0 !important;
+}
+
+.pdf-export-doc .resume-bullets li,
+.pdf-export-doc .resume-certs li {
+  margin-bottom: 0.08rem !important;
+  line-height: 1.25 !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+
 /* --- Final Check panel --- */
 .final-check {
   border-radius: 0.5rem; padding: 1rem 1.25rem; margin-bottom: 1.25rem;
