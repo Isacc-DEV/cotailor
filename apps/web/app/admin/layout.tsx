@@ -38,6 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems = [
     { href: '/admin', label: 'Dashboard', exact: true },
     { href: '/admin/users', label: 'Users', exact: false },
+    { href: '/admin/styles', label: 'Resume Styles', exact: false },
   ];
 
   return (
@@ -56,9 +57,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
           );
         })}
-        <div className="admin-nav-soon" title="Coming soon">
-          Resume Styles <span className="soon-badge">soon</span>
-        </div>
         <div className="admin-nav-soon" title="Coming soon">
           Settings <span className="soon-badge">soon</span>
         </div>

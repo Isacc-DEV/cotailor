@@ -13,8 +13,8 @@ import CertificationsSection from '@/app/components/profile/CertificationsSectio
 import {
   PROFILE_CATEGORIES as CATEGORIES,
   PROFILE_SUBTYPES as SUBTYPES,
-  PROFILE_RESUME_STYLES as RESUME_STYLES,
 } from '@cotailor/shared';
+import { useResumeStyleOptions } from '@/app/hooks/useResumeStyleOptions';
 import './page.css';
 
 interface Profile {
@@ -73,6 +73,7 @@ export default function ProfileEditor() {
   const profileId = searchParams.get('profileId');
 
   const { profiles, loading: loadingProfiles, updateProfile, deleteProfile } = useProfiles();
+  const styleOptions = useResumeStyleOptions();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [formData, setFormData] = useState<Partial<Profile>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -548,9 +549,9 @@ export default function ProfileEditor() {
                 disabled={loading}
               >
                 <option value="">— Select style —</option>
-                {RESUME_STYLES.map((style) => (
-                  <option key={style} value={style}>
-                    {style.charAt(0).toUpperCase() + style.slice(1)}
+                {styleOptions.map((style) => (
+                  <option key={style.key} value={style.key} title={style.description ?? undefined}>
+                    {style.name}
                   </option>
                 ))}
               </select>

@@ -167,6 +167,22 @@ CREATE TABLE "AuditLog" (
   CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
 );
 
+CREATE TABLE "ResumeVisualStyle" (
+  "id" TEXT NOT NULL, "key" TEXT NOT NULL, "name" TEXT NOT NULL, "description" TEXT,
+  "config" JSONB NOT NULL, "enabled" BOOLEAN NOT NULL DEFAULT true,
+  "isDefault" BOOLEAN NOT NULL DEFAULT false, "sortOrder" INTEGER NOT NULL DEFAULT 0,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ResumeVisualStyle_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX "ResumeVisualStyle_key_key" ON "ResumeVisualStyle"("key");
+-- Seed the four styles the profile form has always offered (keys are stable).
+INSERT INTO "ResumeVisualStyle" ("id","key","name","description","config","isDefault","sortOrder") VALUES
+  ('rvs_standard','standard','Standard','Clean and conservative — the safest choice for any application.','{"bodyFont":"system-sans","headingFont":"match","accentColor":"black","density":"normal","headerAlign":"centered","sectionTitleStyle":"underline","bulletMarker":"disc","nameScale":"normal","textScale":"normal","headerRule":"strong","skillsLayout":"inline","sectionOrder":["summary","skills","experience","education","certifications"]}',true,0),
+  ('rvs_modern','modern','Modern','Left-aligned with navy accents, skill pills, and a bolder name.','{"bodyFont":"system-sans","headingFont":"match","accentColor":"navy","density":"normal","headerAlign":"left","sectionTitleStyle":"accent-bar","bulletMarker":"disc","nameScale":"large","textScale":"normal","headerRule":"accent","skillsLayout":"pills","sectionOrder":["summary","skills","experience","education","certifications"]}',false,1),
+  ('rvs_minimal','minimal','Minimal','Compact and quiet — fits more on one page.','{"bodyFont":"system-sans","headingFont":"match","accentColor":"black","density":"compact","headerAlign":"left","sectionTitleStyle":"caps-spaced","bulletMarker":"dash","nameScale":"normal","textScale":"small","headerRule":"thin","skillsLayout":"inline","sectionOrder":["summary","skills","experience","education","certifications"]}',false,2),
+  ('rvs_creative','creative','Creative','Serif headings, burgundy accents, arrow bullets, generous spacing.','{"bodyFont":"system-sans","headingFont":"georgia","accentColor":"burgundy","density":"airy","headerAlign":"centered","sectionTitleStyle":"accent-bar","bulletMarker":"arrow","nameScale":"large","textScale":"normal","headerRule":"accent","skillsLayout":"inline","sectionOrder":["summary","skills","experience","education","certifications"]}',false,3);
+
 CREATE TABLE "SkillTaxonomy" (
   "id" TEXT NOT NULL, "skill" TEXT NOT NULL, "family" TEXT NOT NULL,
   "aliases" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[], "earliestYear" INTEGER,

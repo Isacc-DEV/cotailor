@@ -4,3 +4,4 @@ export * from './schemas';
 export * from './gates';
 export * from './skills';
 export * from './profile';
+export * from './resume-style';

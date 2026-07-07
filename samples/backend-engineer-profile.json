@@ -1,9 +1,9 @@
-{
+﻿{
   "profile": {
     "name": "Backend Engineer - Node.js",
     "category": "Software Engineering",
     "subtype": "Backend",
-    "resumeStyle": "balanced",
+    "resumeStyle": "standard",
     "workAuthorization": "US citizen",
     "domainTags": ["fintech", "payments", "distributed-systems"],
 

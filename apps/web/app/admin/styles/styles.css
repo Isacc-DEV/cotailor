@@ -1,0 +1,223 @@
+.styles-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.styles-header h1 {
+  margin: 0;
+}
+
+.styles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.style-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  background: var(--bg-surface);
+}
+
+.style-row.editing {
+  border-color: var(--accent);
+}
+
+.style-row-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.style-key {
+  font-size: 0.75rem;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  padding: 0.05rem 0.35rem;
+  color: var(--text-secondary);
+}
+
+.style-row-desc {
+  font-size: 0.82rem;
+  margin-top: 0.15rem;
+}
+
+.style-row-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.style-editor {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1rem;
+  background: var(--bg-surface);
+}
+
+.style-editor-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.style-editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.se-field label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.se-field input[type='text'],
+.se-field select {
+  width: 100%;
+  padding: 0.42rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.87rem;
+}
+
+.se-field input:disabled {
+  opacity: 0.6;
+}
+
+.se-swatches {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.se-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.se-swatch.selected {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent-light);
+}
+
+/* Custom color: a swatch-shaped wrapper around a hidden <input type="color"> */
+.se-swatch-custom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 2px dashed var(--border-color);
+  position: relative;
+  cursor: pointer;
+}
+
+.se-swatch-custom.selected {
+  border-style: solid;
+  border-color: var(--accent);
+}
+
+.se-swatch-custom input[type='color'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.se-swatch-plus {
+  font-size: 0.9rem;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+/* Section order rows */
+.se-order {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.se-order-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.84rem;
+  background: var(--bg-primary);
+}
+
+.se-order-btns {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.se-order-btns button {
+  border: 1px solid var(--border-light);
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  padding: 0.1rem 0.45rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.se-order-btns button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.se-check label {
+  font-weight: 500;
+  font-size: 0.84rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.se-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.style-editor-preview {
+  min-width: 0;
+}
+
+.se-preview-label {
+  font-size: 0.78rem;
+  margin-bottom: 0.5rem;
+}
+
+/* The sample doc is real .resume-doc markup; keep it readably sized. */
+.style-editor-preview .resume-doc {
+  font-size: 0.92rem;
+  max-height: 620px;
+  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .style-editor-grid {
+    grid-template-columns: 1fr;
+  }
+}

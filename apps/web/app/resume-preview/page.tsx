@@ -1,11 +1,14 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Fragment, type ReactNode } from 'react';
 import { Button, Spinner, Badge } from '@/app/components/ui';
 import { formatDateRange } from '@/app/lib/date-format';
 import { api } from '@/lib/api-client';
+import { resolveStyleConfig, styleClasses, styleVars } from '@/lib/resume-style';
+import { RESUME_SECTION_KEYS, type ResumeSectionKey, type StyleConfig } from '@cotailor/shared';
 import './page.css';
+import './style-tokens.css';
 
 interface Bullet {
   text: string;
@@ -152,10 +155,17 @@ export default function ResumePreview() {
   const [busy, setBusy] = useState<string | null>(null); // which action is running
   const [fixAllProgress, setFixAllProgress] = useState<{ done: number; total: number } | null>(null);
   const [review, setReview] = useState<FixAllReview | null>(null);
+  const [styleCfg, setStyleCfg] = useState<StyleConfig | null>(null);
 
   const load = useCallback(async () => {
     if (!sessionId) return;
-    setResume(await api.sessions.getResume(sessionId));
+    const [data, styles] = await Promise.all([
+      api.sessions.getResume(sessionId),
+      // Styles are cosmetic: if the list fails, render with the default look.
+      api.styles.list().catch(() => []),
+    ]);
+    setResume(data);
+    setStyleCfg(resolveStyleConfig(styles, data.styleKey));
   }, [sessionId]);
 
   useEffect(() => {
@@ -439,6 +449,194 @@ export default function ResumePreview() {
         .join(' · ') || 'No fixes could be applied automatically'
     : '';
 
+  // The document's sections, keyed so the style's sectionOrder can arrange
+  // them. Real DOM order (not CSS order) so print pagination and the text
+  // order ATS parsers extract from the exported PDF match what the eye sees.
+  const sectionNodes: Record<ResumeSectionKey, ReactNode> = {
+    summary:
+      resume.summary || editingSummary ? (
+        <section>
+          <h3 className="resume-section-title">Summary</h3>
+          {editingSummary ? (
+            <div className="bullet-editor">
+              <textarea
+                value={editingSummary.value}
+                onChange={(ev) => setEditingSummary({ value: ev.target.value })}
+                rows={3}
+                autoFocus
+              />
+              <div className="be-actions">
+                <button className="be-save" onClick={commitSummary} disabled={busy === 'summary'}>
+                  {busy === 'summary' ? 'Saving…' : 'Save'}
+                </button>
+                <button className="be-cancel" onClick={() => setEditingSummary(null)} disabled={busy === 'summary'}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="resume-summary-text">
+              {resume.summary}
+              <span className="bullet-actions">
+                <button
+                  className="ba-btn"
+                  title="Edit summary"
+                  onClick={() => setEditingSummary({ value: resume.summary || '' })}
+                  disabled={busy !== null}
+                >
+                  ✎
+                </button>
+              </span>
+            </p>
+          )}
+        </section>
+      ) : null,
+    skills:
+      resume.skills?.length > 0 ? (
+        <section>
+          <h3 className="resume-section-title">Skills</h3>
+          {styleCfg?.skillsLayout === 'pills' ? (
+            <p className="resume-skills resume-skills-pills">
+              {resume.skills.map((s, i) => (
+                <span key={i} className="skill-pill">
+                  {s}
+                </span>
+              ))}
+            </p>
+          ) : (
+            <p className="resume-skills">{resume.skills.join('  ·  ')}</p>
+          )}
+        </section>
+      ) : null,
+    experience:
+      resume.workExperience?.length > 0 ? (
+        <section>
+          <h3 className="resume-section-title">Experience</h3>
+          {resume.workExperience.map((e, ei) => (
+            <div key={ei} className="resume-exp">
+              <div className="resume-exp-head">
+                <strong>{e.company}</strong>
+                <span>{formatDateRange(e.startDate, e.endDate)}</span>
+              </div>
+              {e.position && <p className="resume-exp-pos">{e.position}</p>}
+              <ul className="resume-bullets">
+                {e.bullets.map((b, bi) => {
+                  const isEditing = editing?.expIndex === ei && editing?.bulletIndex === bi;
+                  const tailored = b.provenance === 'user_confirmed';
+                  const aiFix = review?.changes.find((c) => c.expIndex === ei && c.bulletIndex === bi);
+                  return (
+                    <li key={bi} className={`${tailored ? 'bullet-tailored' : ''} ${aiFix ? 'bullet-ai-fixed' : ''}`.trim()}>
+                      {isEditing ? (
+                        <div className="bullet-editor">
+                          {editing.fromAI && (
+                            <span className={`be-ai-hint ${editing.aiVerified === false ? 'be-ai-unverified' : ''}`}>
+                              {editing.aiVerified === false
+                                ? '⚠ AI suggestion could not fully satisfy all style rules — review extra carefully or rewrite yourself'
+                                : '✨ AI suggestion — review and save to approve'}
+                            </span>
+                          )}
+                          <textarea
+                            value={editing.value}
+                            onChange={(ev) => setEditing({ ...editing, value: ev.target.value })}
+                            rows={2}
+                            autoFocus
+                          />
+                          <div className="be-actions">
+                            <button className="be-save" onClick={commitEdit} disabled={busy === 'edit'}>
+                              {busy === 'edit' ? 'Saving…' : 'Save'}
+                            </button>
+                            <button className="be-cancel" onClick={() => setEditing(null)} disabled={busy === 'edit'}>
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="bullet-text">{b.text}</span>
+                          {tailored && (
+                            <Badge variant="info" className="bullet-tag">
+                              {b.added ? 'added' : 'tailored'}
+                            </Badge>
+                          )}
+                          <span className="bullet-actions">
+                            <button
+                              className="ba-btn"
+                              title="Edit this bullet"
+                              onClick={() => startEdit(ei, bi)}
+                              disabled={busy !== null}
+                            >
+                              ✎
+                            </button>
+                            {aiFix && (
+                              <button
+                                className="ba-btn"
+                                title="Undo this AI rewrite"
+                                onClick={() => undoAiFix(ei, bi)}
+                                disabled={busy !== null}
+                              >
+                                ↩
+                              </button>
+                            )}
+                            {!aiFix && tailored && (b.originalText || b.added) && (
+                              <button
+                                className="ba-btn"
+                                title={b.added ? 'Remove this added bullet' : 'Revert to your original wording'}
+                                onClick={() => revert(ei, bi)}
+                                disabled={busy !== null}
+                              >
+                                ↩
+                              </button>
+                            )}
+                          </span>
+                          {aiFix && <span className="bullet-before">✨ before: {aiFix.before}</span>}
+                          {tailored && b.originalText && (
+                            <span className="bullet-before">before: {b.originalText}</span>
+                          )}
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </section>
+      ) : null,
+    education:
+      resume.education?.length > 0 ? (
+        <section>
+          <h3 className="resume-section-title">Education</h3>
+          <ul className="resume-certs">
+            {resume.education.map((ed: any, i: number) => (
+              <li key={i}>
+                {typeof ed === 'string'
+                  ? ed
+                  : [[ed.degree, ed.field].filter(Boolean).join(' in '), ed.institution]
+                      .filter(Boolean)
+                      .join(' — ') + (ed.graduationYear ? ` (${ed.graduationYear})` : '')}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null,
+    certifications:
+      resume.certifications?.length > 0 ? (
+        <section>
+          <h3 className="resume-section-title">Certifications</h3>
+          <ul className="resume-certs">
+            {resume.certifications.map((c: any, i: number) => (
+              <li key={i}>
+                {c.name}
+                {c.status ? ` (${c.status})` : ''}
+                {c.issuer ? ` — ${c.issuer}` : ''}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null,
+  };
+  const sectionOrder: ResumeSectionKey[] = styleCfg?.sectionOrder ?? [...RESUME_SECTION_KEYS];
+
   return (
     <div className="resume-preview">
       <div className="resume-toolbar">
@@ -547,7 +745,10 @@ export default function ResumePreview() {
       </aside>
 
       <div className="resume-main">
-      <div className="resume-doc">
+      <div
+        className={`resume-doc${styleCfg ? ` ${styleClasses(styleCfg)}` : ''}`}
+        style={styleCfg ? styleVars(styleCfg) : undefined}
+      >
         <div className="resume-doc-header">
           <h2>{h.name || 'Your Name'}</h2>
           {h.title && <p className="resume-title">{h.title}</p>}
@@ -556,159 +757,9 @@ export default function ResumePreview() {
           </p>
         </div>
 
-        {(resume.summary || editingSummary) && (
-          <section>
-            <h3 className="resume-section-title">Summary</h3>
-            {editingSummary ? (
-              <div className="bullet-editor">
-                <textarea
-                  value={editingSummary.value}
-                  onChange={(ev) => setEditingSummary({ value: ev.target.value })}
-                  rows={3}
-                  autoFocus
-                />
-                <div className="be-actions">
-                  <button className="be-save" onClick={commitSummary} disabled={busy === 'summary'}>
-                    {busy === 'summary' ? 'Saving…' : 'Save'}
-                  </button>
-                  <button className="be-cancel" onClick={() => setEditingSummary(null)} disabled={busy === 'summary'}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className="resume-summary-text">
-                {resume.summary}
-                <span className="bullet-actions">
-                  <button
-                    className="ba-btn"
-                    title="Edit summary"
-                    onClick={() => setEditingSummary({ value: resume.summary || '' })}
-                    disabled={busy !== null}
-                  >
-                    ✎
-                  </button>
-                </span>
-              </p>
-            )}
-          </section>
-        )}
-
-        {resume.skills?.length > 0 && (
-          <section>
-            <h3 className="resume-section-title">Skills</h3>
-            <p className="resume-skills">{resume.skills.join('  ·  ')}</p>
-          </section>
-        )}
-
-        {resume.workExperience?.length > 0 && (
-          <section>
-            <h3 className="resume-section-title">Experience</h3>
-            {resume.workExperience.map((e, ei) => (
-              <div key={ei} className="resume-exp">
-                <div className="resume-exp-head">
-                  <strong>{e.company}</strong>
-                  <span>{formatDateRange(e.startDate, e.endDate)}</span>
-                </div>
-                {e.position && <p className="resume-exp-pos">{e.position}</p>}
-                <ul className="resume-bullets">
-                  {e.bullets.map((b, bi) => {
-                    const isEditing = editing?.expIndex === ei && editing?.bulletIndex === bi;
-                    const tailored = b.provenance === 'user_confirmed';
-                    const aiFix = review?.changes.find((c) => c.expIndex === ei && c.bulletIndex === bi);
-                    return (
-                      <li key={bi} className={`${tailored ? 'bullet-tailored' : ''} ${aiFix ? 'bullet-ai-fixed' : ''}`.trim()}>
-                        {isEditing ? (
-                          <div className="bullet-editor">
-                            {editing.fromAI && (
-                              <span className={`be-ai-hint ${editing.aiVerified === false ? 'be-ai-unverified' : ''}`}>
-                                {editing.aiVerified === false
-                                  ? '⚠ AI suggestion could not fully satisfy all style rules — review extra carefully or rewrite yourself'
-                                  : '✨ AI suggestion — review and save to approve'}
-                              </span>
-                            )}
-                            <textarea
-                              value={editing.value}
-                              onChange={(ev) => setEditing({ ...editing, value: ev.target.value })}
-                              rows={2}
-                              autoFocus
-                            />
-                            <div className="be-actions">
-                              <button className="be-save" onClick={commitEdit} disabled={busy === 'edit'}>
-                                {busy === 'edit' ? 'Saving…' : 'Save'}
-                              </button>
-                              <button className="be-cancel" onClick={() => setEditing(null)} disabled={busy === 'edit'}>
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <span className="bullet-text">{b.text}</span>
-                            {tailored && (
-                              <Badge variant="info" className="bullet-tag">
-                                {b.added ? 'added' : 'tailored'}
-                              </Badge>
-                            )}
-                            <span className="bullet-actions">
-                              <button
-                                className="ba-btn"
-                                title="Edit this bullet"
-                                onClick={() => startEdit(ei, bi)}
-                                disabled={busy !== null}
-                              >
-                                ✎
-                              </button>
-                              {aiFix && (
-                                <button
-                                  className="ba-btn"
-                                  title="Undo this AI rewrite"
-                                  onClick={() => undoAiFix(ei, bi)}
-                                  disabled={busy !== null}
-                                >
-                                  ↩
-                                </button>
-                              )}
-                              {!aiFix && tailored && (b.originalText || b.added) && (
-                                <button
-                                  className="ba-btn"
-                                  title={b.added ? 'Remove this added bullet' : 'Revert to your original wording'}
-                                  onClick={() => revert(ei, bi)}
-                                  disabled={busy !== null}
-                                >
-                                  ↩
-                                </button>
-                              )}
-                            </span>
-                            {aiFix && <span className="bullet-before">✨ before: {aiFix.before}</span>}
-                            {tailored && b.originalText && (
-                              <span className="bullet-before">before: {b.originalText}</span>
-                            )}
-                          </>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </section>
-        )}
-
-        {resume.certifications?.length > 0 && (
-          <section>
-            <h3 className="resume-section-title">Certifications</h3>
-            <ul className="resume-certs">
-              {resume.certifications.map((c: any, i: number) => (
-                <li key={i}>
-                  {c.name}
-                  {c.status ? ` (${c.status})` : ''}
-                  {c.issuer ? ` — ${c.issuer}` : ''}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        {sectionOrder.map((k) => (
+          <Fragment key={k}>{sectionNodes[k]}</Fragment>
+        ))}
       </div>
       </div>
       </div>

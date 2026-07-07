@@ -242,8 +242,17 @@ export class SessionsService {
       content = rest;
     }
 
+    // The profile's visual style key, so the preview can render + print with
+    // the right style config (falls back to the default style if absent).
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: session.profileId },
+      select: { baseResume: true },
+    });
+    const styleKey = (profile?.baseResume as any)?.resumeStyle ?? null;
+
     return {
       ...content,
+      styleKey,
       qualityReport: lintResume(content.workExperience ?? [], content.summary),
     };
   }

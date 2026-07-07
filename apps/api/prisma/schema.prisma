@@ -383,6 +383,23 @@ model AuditLog {
   @@index([sessionId])
 }
 
+// Admin-managed visual resume styles ("ResumeVisualStyle" — the ResumeStyle
+// name is taken by the per-session content-style enum). Profiles reference a
+// style by `key` inside baseResume.resumeStyle; config holds the enumerated
+// visual tokens validated by @cotailor/shared styleConfigSchema.
+model ResumeVisualStyle {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  config      Json
+  enabled     Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 // ---- Premium / config tables ----
 model SkillTaxonomy {
   id           String   @id @default(cuid())

@@ -12,6 +12,9 @@ const EVENT_LABELS: Record<string, string> = {
   'admin.user.suspend': 'suspended',
   'admin.user.reactivate': 'reactivated',
   'admin.user.role_change': 'role changed',
+  'admin.style.create': 'created a resume style',
+  'admin.style.update': 'updated a resume style',
+  'admin.style.delete': 'deleted a resume style',
 };
 
 export default function AdminDashboard() {
@@ -78,7 +81,8 @@ export default function AdminDashboard() {
                 <strong>{e.user?.email ?? 'unknown user'}</strong>{' '}
                 {EVENT_LABELS[e.eventType] ?? e.eventType}
                 {e.eventType === 'admin.user.role_change' && e.payload?.to ? ` to ${e.payload.to}` : ''}
-                {e.payload?.actorEmail ? (
+                {e.eventType.startsWith('admin.style.') && e.payload?.key ? ` (${e.payload.key})` : ''}
+                {e.payload?.actorEmail && e.payload.actorEmail !== e.user?.email ? (
                   <span className="admin-muted"> — by {e.payload.actorEmail}</span>
                 ) : null}
               </span>

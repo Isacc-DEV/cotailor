@@ -125,6 +125,21 @@ export const api = {
     },
   },
 
+  styles: {
+    // Enabled visual resume styles, in display order (for dropdowns + preview).
+    list: async () => {
+      return request<
+        Array<{
+          key: string;
+          name: string;
+          description: string | null;
+          isDefault: boolean;
+          config: any;
+        }>
+      >('/resume-styles');
+    },
+  },
+
   admin: {
     stats: async () => {
       return request<{
@@ -182,6 +197,62 @@ export const api = {
         return request<any>(`/admin/users/${id}`, {
           method: 'PATCH',
           body: JSON.stringify(data),
+        });
+      },
+    },
+
+    styles: {
+      list: async () => {
+        return request<
+          Array<{
+            id: string;
+            key: string;
+            name: string;
+            description: string | null;
+            config: any;
+            enabled: boolean;
+            isDefault: boolean;
+            sortOrder: number;
+            updatedAt: string;
+            usageCount: number;
+          }>
+        >('/admin/resume-styles');
+      },
+
+      create: async (data: {
+        key: string;
+        name: string;
+        description?: string;
+        config: any;
+        isDefault?: boolean;
+        sortOrder?: number;
+      }) => {
+        return request<any>('/admin/resume-styles', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+
+      update: async (
+        id: string,
+        data: Partial<{
+          name: string;
+          description: string | null;
+          config: any;
+          enabled: boolean;
+          isDefault: boolean;
+          sortOrder: number;
+        }>,
+      ) => {
+        return request<any>(`/admin/resume-styles/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+      },
+
+      delete: async (id: string) => {
+        return request<{ deleted: boolean }>(`/admin/resume-styles/${id}`, {
+          method: 'DELETE',
         });
       },
     },
