@@ -10,6 +10,7 @@ interface EducationItem {
   institution: string;
   degree: string;
   field: string;
+  startDate?: string;
   graduationYear: number | string;
   gpa?: string;
   honors?: string;
@@ -94,6 +95,7 @@ export default function EducationSection({
       institution: '',
       degree: 'Bachelor',
       field: '',
+      startDate: '',
       graduationYear: new Date().getFullYear(),
       gpa: '',
       honors: '',
@@ -262,6 +264,20 @@ export default function EducationSection({
             </div>
 
             <div className="form-group">
+              <label htmlFor="startDate">Start Date</label>
+              <input
+                type="text"
+                id="startDate"
+                value={editingData.startDate || ''}
+                onChange={(e) =>
+                  setEditingData({ ...editingData, startDate: e.target.value })
+                }
+                placeholder="e.g., 2014-09 or 2014"
+                disabled={disabled}
+              />
+            </div>
+
+            <div className="form-group">
               <label htmlFor="graduationYear">Graduation Year</label>
               <input
                 type="number"
@@ -400,7 +416,10 @@ export default function EducationSection({
                     <p className="degree-info">
                       {edu.degree} in {edu.field}
                     </p>
-                    <p className="graduation">Graduated: {edu.graduationYear}</p>
+                    <p className="graduation">
+                      {edu.startDate ? `Started: ${edu.startDate} · ` : ''}
+                      Graduated: {edu.graduationYear}
+                    </p>
                   </div>
                   <div className="edu-actions">
                     <button

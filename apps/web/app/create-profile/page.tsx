@@ -31,6 +31,7 @@ export default function CreateProfile() {
       name: '',
       title: '',
       address: '',
+      email: '',
       phone: '',
       linkedin: '',
       url: '',
@@ -368,6 +369,19 @@ export default function CreateProfile() {
                 placeholder="City, State"
                 value={formData.header.address}
                 onChange={(e) => handleInputChange(e, 'header.address')}
+                disabled={submitting}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="headerEmail">Email</label>
+              <input
+                type="email"
+                id="headerEmail"
+                name="headerEmail"
+                placeholder="you@example.com"
+                value={formData.header.email}
+                onChange={(e) => handleInputChange(e, 'header.email')}
                 disabled={submitting}
               />
             </div>

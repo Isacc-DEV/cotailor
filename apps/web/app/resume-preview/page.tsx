@@ -656,7 +656,10 @@ export default function ResumePreview() {
                   ? ed
                   : [[ed.degree, ed.field].filter(Boolean).join(' in '), ed.institution]
                       .filter(Boolean)
-                      .join(' — ') + (ed.graduationYear ? ` (${ed.graduationYear})` : '')}
+                      .join(' — ') +
+                    (ed.startDate || ed.graduationYear
+                      ? ` (${formatDateRange(ed.startDate, ed.graduationYear)})`
+                      : '')}
               </li>
             ))}
           </ul>
@@ -801,7 +804,7 @@ export default function ResumePreview() {
           <h2>{h.name || 'Your Name'}</h2>
           {h.title && <p className="resume-title">{h.title}</p>}
           <p className="resume-contact">
-            {[h.address, h.phone, h.linkedin, h.url].filter(Boolean).join('  ·  ')}
+            {[h.address, h.email, h.phone, h.linkedin, h.url].filter(Boolean).join('  ·  ')}
           </p>
         </div>
 

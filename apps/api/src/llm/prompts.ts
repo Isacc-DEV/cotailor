@@ -161,7 +161,8 @@ FIELD RULES:
 ${subtypeLines}
 4. "header": the candidate's contact block. "name" is their full name,
    "title" their professional title, "address" city/state or location,
-   "linkedin" the LinkedIn URL or handle, "url" any personal site/portfolio.
+   "email" their email address, "linkedin" the LinkedIn URL or handle, "url"
+   any personal site/portfolio.
 5. "workExperience": one entry per role, most recent first.
    - "position" = job title, "company" = employer.
    - "startDate"/"endDate" as "YYYY-MM" if month is known, else "YYYY".
@@ -173,7 +174,8 @@ ${subtypeLines}
 6. "education": one entry per school. "degree" mapped to the closest of:
    ${PROFILE_DEGREES.join(', ')} (e.g. "B.Sc." → "Bachelor", "MBA" → "Master");
    use "Other" if unmappable. "field" is the major/discipline.
-   "graduationYear" as a 4-digit year string, else "".
+   "startDate" as "YYYY-MM" if month is known, else "YYYY"; "graduationYear"
+   as a 4-digit year string, else "".
 7. "skills": a flat, deduplicated array of concrete skills, tools, technologies,
    and techniques listed anywhere in the resume (skills section, role bullets).
    Atomic keywords only, no proficiency labels or years.
@@ -186,9 +188,9 @@ ${subtypeLines}
 Return JSON EXACTLY in this shape:
 {"name": string, "category": string, "category_confidence": number,
  "subtype": string,
- "header": {"name": string, "title": string, "address": string, "phone": string, "linkedin": string, "url": string},
+ "header": {"name": string, "title": string, "address": string, "email": string, "phone": string, "linkedin": string, "url": string},
  "workExperience": [{"company": string, "position": string, "startDate": string, "endDate": string|null, "location": string, "description": string, "bullets": string[], "technologies": string[], "impact": string}],
- "education": [{"institution": string, "degree": string, "field": string, "graduationYear": string, "gpa": string, "honors": string, "relevantCoursework": string[]}],
+ "education": [{"institution": string, "degree": string, "field": string, "startDate": string, "graduationYear": string, "gpa": string, "honors": string, "relevantCoursework": string[]}],
  "skills": string[],
  "certifications": [{"name": string, "issuer": string, "issueDate": string, "expiryDate": string, "credentialId": string, "credentialUrl": string}],
  "warnings": string[]}

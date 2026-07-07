@@ -27,6 +27,7 @@ interface Profile {
     name?: string;
     title?: string;
     address?: string;
+    email?: string;
     phone?: string;
     linkedin?: string;
     url?: string;
@@ -46,6 +47,7 @@ interface Profile {
     institution: string;
     degree: string;
     field: string;
+    startDate?: string;
     graduationYear: number | string;
     gpa?: string;
     honors?: string;
@@ -611,6 +613,19 @@ export default function ProfileEditor() {
                 placeholder="City, State"
                 value={formData.header?.address || ''}
                 onChange={(e) => handleInputChange(e, 'header.address')}
+                disabled={loading}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="headerEmail">Email</label>
+              <input
+                type="email"
+                id="headerEmail"
+                name="headerEmail"
+                placeholder="you@example.com"
+                value={formData.header?.email || ''}
+                onChange={(e) => handleInputChange(e, 'header.email')}
                 disabled={loading}
               />
             </div>
