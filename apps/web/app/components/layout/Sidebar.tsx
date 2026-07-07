@@ -339,6 +339,18 @@ export function Sidebar() {
                   >
                     ⚙ Settings
                   </button>
+                  {user.role === 'admin' && (
+                    <button
+                      className="account-menu-item"
+                      role="menuitem"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        handleNavigation('/admin');
+                      }}
+                    >
+                      ⛭ Manage
+                    </button>
+                  )}
                   <div className="account-menu-divider" />
                   <button
                     className="account-menu-item"

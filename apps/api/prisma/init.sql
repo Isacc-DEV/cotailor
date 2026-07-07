@@ -19,6 +19,8 @@ CREATE TYPE "CreatedBy" AS ENUM ('ai_generation','ai_revision','user_edit');
 CREATE TYPE "ScreeningOutlook" AS ENUM ('likely_pass','borderline','unlikely');
 CREATE TYPE "ExportFormat" AS ENUM ('docx','pdf','txt');
 CREATE TYPE "CategoryRelationKind" AS ENUM ('same','adjacent','distinct');
+CREATE TYPE "Role" AS ENUM ('user','admin');
+CREATE TYPE "UserStatus" AS ENUM ('pending','active','suspended');
 
 -- ===== Tables =====
 CREATE TABLE "User" (
@@ -26,6 +28,10 @@ CREATE TABLE "User" (
   "email" TEXT NOT NULL,
   "name" TEXT,
   "passwordHash" TEXT,
+  "role" "Role" NOT NULL DEFAULT 'user',
+  "status" "UserStatus" NOT NULL DEFAULT 'pending',
+  "verifiedAt" TIMESTAMP(3),
+  "disabledAt" TIMESTAMP(3),
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );

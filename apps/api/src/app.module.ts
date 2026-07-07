@@ -9,6 +9,7 @@ import { SessionsModule } from './sessions/sessions.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { ProfileImportModule } from './profile-import/profile-import.module';
 import { AuthModule } from './auth/auth.module';
+import { AdminModule } from './admin/admin.module';
 import { JwtAuthGuard } from './auth/auth.guard';
 import { HealthController } from './health.controller';
 
@@ -23,6 +24,7 @@ import { HealthController } from './health.controller';
     ProfilesModule,
     ProfileImportModule,
     AuthModule,
+    AdminModule,
   ],
   controllers: [HealthController],
   // Every route requires a bearer token unless marked @Public().

@@ -100,21 +100,90 @@ async function request<T>(
 export const api = {
   auth: {
     signup: async (data: { email: string; password: string; name?: string }) => {
-      return request<{ userId: string; email: string; name: string | null; token: string }>(
-        '/auth/signup',
-        { method: 'POST', body: JSON.stringify(data) },
-      );
+      // token is present only for bootstrap admins; normal signups come back
+      // status: 'pending' and must wait for admin approval.
+      return request<{
+        userId: string;
+        email: string;
+        name: string | null;
+        role: 'user' | 'admin';
+        status: 'pending' | 'active';
+        token?: string;
+        message?: string;
+      }>('/auth/signup', { method: 'POST', body: JSON.stringify(data) });
     },
 
     signin: async (data: { email: string; password: string }) => {
-      return request<{ userId: string; email: string; name: string | null; token: string }>(
+      return request<{ userId: string; email: string; name: string | null; role: 'user' | 'admin'; token: string }>(
         '/auth/signin',
         { method: 'POST', body: JSON.stringify(data) },
       );
     },
 
     me: async () => {
-      return request<{ userId: string; email: string; name: string | null }>('/auth/me');
+      return request<{ userId: string; email: string; name: string | null; role: 'user' | 'admin' }>('/auth/me');
+    },
+  },
+
+  admin: {
+    stats: async () => {
+      return request<{
+        users: { total: number; pending: number; active: number; suspended: number; admins: number };
+        profiles: { total: number };
+        sessions: { total: number; byState: Record<string, number> };
+        recentAdminActivity: Array<{
+          id: string;
+          eventType: string;
+          payload: any;
+          createdAt: string;
+          user: { email: string } | null;
+        }>;
+      }>('/admin/stats');
+    },
+
+    users: {
+      list: async (params: {
+        search?: string;
+        role?: 'user' | 'admin';
+        status?: 'pending' | 'active' | 'suspended';
+        page?: number;
+        pageSize?: number;
+      } = {}) => {
+        const qs = new URLSearchParams();
+        if (params.search) qs.set('search', params.search);
+        if (params.role) qs.set('role', params.role);
+        if (params.status) qs.set('status', params.status);
+        if (params.page) qs.set('page', String(params.page));
+        if (params.pageSize) qs.set('pageSize', String(params.pageSize));
+        const suffix = qs.toString() ? `?${qs.toString()}` : '';
+        return request<{
+          users: Array<{
+            id: string;
+            email: string;
+            name: string | null;
+            role: 'user' | 'admin';
+            status: 'pending' | 'active' | 'suspended';
+            createdAt: string;
+            profileCount: number;
+            sessionCount: number;
+            lastActivityAt: string | null;
+          }>;
+          total: number;
+          page: number;
+          pageSize: number;
+        }>(`/admin/users${suffix}`);
+      },
+
+      get: async (id: string) => {
+        return request<any>(`/admin/users/${id}`);
+      },
+
+      update: async (id: string, data: { role?: 'user' | 'admin'; status?: 'active' | 'suspended' }) => {
+        return request<any>(`/admin/users/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+      },
     },
   },
 

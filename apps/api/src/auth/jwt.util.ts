@@ -3,6 +3,7 @@ import * as jwt from 'jsonwebtoken';
 export interface JwtPayload {
   sub: string;
   email: string;
+  role: 'user' | 'admin';
 }
 
 const TOKEN_TTL = '7d';
@@ -20,5 +21,10 @@ export function verifyToken(token: string): JwtPayload {
   if (typeof decoded === 'string' || typeof decoded.sub !== 'string') {
     throw new Error('Malformed token payload');
   }
-  return { sub: decoded.sub, email: String(decoded.email ?? '') };
+  return {
+    sub: decoded.sub,
+    email: String(decoded.email ?? ''),
+    // Tokens minted before roles existed carry no role claim — treat as user.
+    role: decoded.role === 'admin' ? 'admin' : 'user',
+  };
 }

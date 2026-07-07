@@ -13,6 +13,7 @@ export default function SignUp() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -53,8 +54,14 @@ export default function SignUp() {
         password: formData.password,
         name: formData.name,
       });
-      setAuth(data.token, { id: data.userId, email: data.email, name: data.name || formData.name });
 
+      // Normal accounts start pending: no token until an admin approves them.
+      if (!data.token) {
+        setPendingApproval(true);
+        return;
+      }
+
+      setAuth(data.token, { id: data.userId, email: data.email, name: data.name || formData.name, role: data.role });
       router.push('/profile-selector');
     } catch (err) {
       setServerError(err.message || 'Sign up failed. Please try again.');
@@ -62,6 +69,23 @@ export default function SignUp() {
       setLoading(false);
     }
   };
+
+  if (pendingApproval) {
+    return (
+      <div className="auth-page">
+        <div className="auth-container">
+          <h1>Account Created</h1>
+          <p>
+            Your account is <strong>awaiting admin approval</strong>. You will be able to sign in as
+            soon as an administrator verifies it.
+          </p>
+          <p className="auth-footer">
+            Already approved? <a href="/auth/signin">Sign In</a>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-page">

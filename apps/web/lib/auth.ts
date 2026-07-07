@@ -5,6 +5,7 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string | null;
+  role?: 'user' | 'admin';
 }
 
 const TOKEN_KEY = 'auth_token';

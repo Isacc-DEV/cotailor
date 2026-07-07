@@ -7,6 +7,7 @@ import { verifyToken } from './jwt.util';
 export interface AuthUser {
   userId: string;
   email: string;
+  role: 'user' | 'admin';
 }
 
 @Injectable()
@@ -31,7 +32,7 @@ export class JwtAuthGuard implements CanActivate {
     }
     try {
       const payload = verifyToken(token);
-      req.user = { userId: payload.sub, email: payload.email };
+      req.user = { userId: payload.sub, email: payload.email, role: payload.role };
       return true;
     } catch {
       throw new UnauthorizedException({ error: 'unauthorized', message: 'Invalid or expired token' });

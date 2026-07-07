@@ -111,11 +111,27 @@ enum CategoryRelationKind {
   distinct
 }
 
+enum Role {
+  user
+  admin
+}
+
+// Lifecycle: signup -> pending (admin must approve) -> active <-> suspended.
+enum UserStatus {
+  pending
+  active
+  suspended
+}
+
 model User {
   id           String             @id @default(cuid())
   email        String             @unique
   name         String?
   passwordHash String?
+  role         Role               @default(user)
+  status       UserStatus         @default(pending)
+  verifiedAt   DateTime? // when an admin approved the account
+  disabledAt   DateTime? // when the current suspension started
   createdAt    DateTime           @default(now())
   profiles     Profile[]
   sessions     TailoringSession[]
