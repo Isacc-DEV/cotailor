@@ -4,7 +4,7 @@ services:
     container_name: cotailor-postgres
     environment:
       POSTGRES_USER: cotailor
-      POSTGRES_PASSWORD: cotailor
+      POSTGRES_PASSWORD: root
       POSTGRES_DB: cotailor
     ports:
       - "5432:5432"

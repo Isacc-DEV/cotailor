@@ -194,6 +194,7 @@ export class StubLlmProvider implements LLMProvider {
     const lines = resumeText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
     const firstLine = lines[0] ?? '';
     const looksLikeName = firstLine.length > 0 && firstLine.length <= 60 && firstLine.split(/\s+/).length <= 6;
+    const email = resumeText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ?? '';
     const phone = resumeText.match(/\+?\d[\d\s().-]{7,}\d/)?.[0]?.trim() ?? '';
     const linkedin = resumeText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[\w-]+/i)?.[0] ?? '';
     return {
@@ -205,6 +206,7 @@ export class StubLlmProvider implements LLMProvider {
         name: looksLikeName ? firstLine : '',
         title: '',
         address: '',
+        email,
         phone,
         linkedin,
         url: '',

@@ -143,11 +143,12 @@ export const profileImportSchema = z.object({
       name: str,
       title: str,
       address: str,
+      email: str,
       phone: str,
       linkedin: str,
       url: str,
     })
-    .catch({ name: '', title: '', address: '', phone: '', linkedin: '', url: '' }),
+    .catch({ name: '', title: '', address: '', email: '', phone: '', linkedin: '', url: '' }),
   workExperience: z
     .array(
       z.object({
@@ -169,6 +170,7 @@ export const profileImportSchema = z.object({
         institution: str,
         degree: str,
         field: str,
+        startDate: str,
         graduationYear: z.union([z.string(), z.number()]).catch(''),
         gpa: str,
         honors: str,

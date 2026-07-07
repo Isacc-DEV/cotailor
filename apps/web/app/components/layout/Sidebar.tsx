@@ -327,7 +327,8 @@ export function Sidebar() {
                       handleNavigation('/profile-selector');
                     }}
                   >
-                    ❏ Profiles
+                    <span className="account-menu-icon icon-profiles" aria-hidden="true" />
+                    <span>Profiles</span>
                   </button>
                   <button
                     className="account-menu-item"
@@ -337,7 +338,8 @@ export function Sidebar() {
                       handleNavigation('/settings');
                     }}
                   >
-                    ⚙ Settings
+                    <span className="account-menu-icon icon-settings" aria-hidden="true" />
+                    <span>Settings</span>
                   </button>
                   {user.role === 'admin' && (
                     <button
@@ -348,7 +350,8 @@ export function Sidebar() {
                         handleNavigation('/admin');
                       }}
                     >
-                      ⛭ Manage
+                      <span className="account-menu-icon icon-manage" aria-hidden="true" />
+                      <span>Manage</span>
                     </button>
                   )}
                   <div className="account-menu-divider" />
@@ -360,7 +363,8 @@ export function Sidebar() {
                       handleSignOut();
                     }}
                   >
-                    ↪ Sign out
+                    <span className="account-menu-icon icon-signout" aria-hidden="true" />
+                    <span>Sign out</span>
                   </button>
                 </div>
               )}

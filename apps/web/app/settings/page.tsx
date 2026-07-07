@@ -205,13 +205,21 @@ export default function Settings() {
         {/* Account Info */}
         <div className="settings-section account-info">
           <h2>Account</h2>
-          <div className="info-item">
-            <span className="label">Email:</span>
-            <span className="value">{user?.email}</span>
-          </div>
-          <div className="info-item">
-            <span className="label">Status:</span>
-            <span className="value status-active">Active</span>
+          <p className="section-subtitle">Signed-in workspace details for this browser session.</p>
+
+          <div className="account-rows">
+            <div className="account-row">
+              <span className="account-row-label">Email</span>
+              <span className="account-row-value account-email">{user?.email}</span>
+            </div>
+            <div className="account-row">
+              <span className="account-row-label">Access</span>
+              <span className="account-row-value">{user?.role === 'admin' ? 'Admin' : 'User'}</span>
+            </div>
+            <div className="account-row">
+              <span className="account-row-label">Status</span>
+              <span className="account-row-value">Active</span>
+            </div>
           </div>
         </div>
       </div>

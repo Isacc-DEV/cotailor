@@ -27,6 +27,7 @@ interface Profile {
     name?: string;
     title?: string;
     address?: string;
+    email?: string;
     phone?: string;
     linkedin?: string;
     url?: string;
@@ -46,6 +47,7 @@ interface Profile {
     institution: string;
     degree: string;
     field: string;
+    startDate?: string;
     graduationYear: number | string;
     gpa?: string;
     honors?: string;
@@ -411,8 +413,9 @@ export default function ProfileEditor() {
       <h1>Edit Profile</h1>
       <div className="editor-header">
         <div className="header-left">
-          <Button variant="secondary" onClick={() => router.push('/profile-selector')}>
-            ← Back to Profiles
+          <Button variant="secondary" className="profile-back-btn" onClick={() => router.push('/profile-selector')}>
+            <span className="profile-toolbar-icon back-icon" aria-hidden="true" />
+            <span>Back to Profiles</span>
           </Button>
         </div>
 
@@ -423,7 +426,8 @@ export default function ProfileEditor() {
             disabled={exporting}
             title="Download profile as JSON"
           >
-            ⬇️ {exporting ? 'Exporting...' : 'Export'}
+            <span className="profile-toolbar-icon export-icon" aria-hidden="true" />
+            <span>{exporting ? 'Exporting...' : 'Export'}</span>
           </button>
 
           <button
@@ -431,11 +435,17 @@ export default function ProfileEditor() {
             onClick={handleCopyToClipboard}
             title="Copy profile JSON to clipboard"
           >
-            📋 Copy
+            <span className="profile-toolbar-icon copy-icon" aria-hidden="true" />
+            <span>Copy</span>
           </button>
 
-          <label className="export-import-btn import-btn" title="Import a profile JSON export or a Word/PDF resume">
-            📤 {importing ? 'Importing...' : 'Import'}
+          <label
+            className={`export-import-btn import-btn ${importing ? 'is-disabled' : ''}`}
+            title="Import a profile JSON export or a Word/PDF resume"
+            aria-disabled={importing}
+          >
+            <span className="profile-toolbar-icon import-icon" aria-hidden="true" />
+            <span>{importing ? 'Importing...' : 'Import'}</span>
             <input
               type="file"
               accept=".json,.docx,.pdf"
@@ -451,7 +461,8 @@ export default function ProfileEditor() {
             disabled={importing}
             title="Paste profile JSON from clipboard"
           >
-            📌 {importing ? 'Pasting...' : 'Paste'}
+            <span className="profile-toolbar-icon paste-icon" aria-hidden="true" />
+            <span>{importing ? 'Pasting...' : 'Paste'}</span>
           </button>
         </div>
       </div>
@@ -602,6 +613,19 @@ export default function ProfileEditor() {
                 placeholder="City, State"
                 value={formData.header?.address || ''}
                 onChange={(e) => handleInputChange(e, 'header.address')}
+                disabled={loading}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="headerEmail">Email</label>
+              <input
+                type="email"
+                id="headerEmail"
+                name="headerEmail"
+                placeholder="you@example.com"
+                value={formData.header?.email || ''}
+                onChange={(e) => handleInputChange(e, 'header.email')}
                 disabled={loading}
               />
             </div>

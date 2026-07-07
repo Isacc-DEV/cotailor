@@ -454,7 +454,44 @@
 .resume-preview { margin: 0 auto; padding: 2rem 1rem; }
 .resume-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
 .resume-toolbar h1 { margin: 0; font-size: 1.5rem; color: var(--text-primary); }
-.resume-toolbar-actions { display: flex; gap: 0.5rem; }
+.resume-toolbar-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.4rem; }
+.resume-toolbar-actions .resume-toolbar-btn {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111111;
+  font-size: 0.8rem;
+  font-weight: 750;
+  box-shadow: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.resume-toolbar-actions .resume-toolbar-btn:hover:not(:disabled) {
+  border-color: #111111;
+  background: rgba(0, 0, 0, 0.04);
+  color: #000000;
+  transform: translateY(-1px);
+}
+.resume-toolbar-actions .resume-toolbar-btn.primary {
+  background: #111111;
+  border-color: #111111;
+  color: #ffffff;
+}
+.resume-toolbar-actions .resume-toolbar-btn.primary:hover:not(:disabled) {
+  background: #000000;
+  border-color: #000000;
+  color: #ffffff;
+}
+.resume-toolbar-actions .resume-toolbar-btn:disabled {
+  opacity: 0.42;
+}
 .changelog {
   background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 0.5rem;
   padding: 1rem 1.25rem; margin-bottom: 1.25rem;
@@ -488,6 +525,99 @@
 .bullet-tag { margin-left: 0.5rem; font-size: 0.65rem; vertical-align: middle; }
 .resume-certs { margin: 0; padding-left: 1.2rem; }
 .resume-certs li { font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 0.2rem; }
+
+.pdf-export-host {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 7.4in;
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.pdf-export-doc {
+  width: 7.4in;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+.pdf-export-doc,
+.pdf-export-doc * {
+  background: transparent !important;
+  color: #000000 !important;
+}
+
+.pdf-export-doc .resume-doc-header {
+  margin-bottom: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  border-bottom: 2px solid #000000 !important;
+}
+
+.pdf-export-doc .resume-doc-header h2 {
+  font-size: 1.45rem !important;
+}
+
+.pdf-export-doc .resume-title,
+.pdf-export-doc .resume-contact {
+  margin: 0.12rem 0 0 !important;
+}
+
+.pdf-export-doc section {
+  margin: 0 !important;
+  padding: 0 !important;
+  break-inside: auto;
+}
+
+.pdf-export-doc .resume-section-title {
+  margin: 0.28rem 0 0.18rem !important;
+  padding-bottom: 0.12rem !important;
+  border-bottom: 1px solid #888888 !important;
+  break-after: avoid !important;
+  page-break-after: avoid !important;
+}
+
+.pdf-export-doc .resume-summary-text,
+.pdf-export-doc .resume-skills {
+  margin: 0 !important;
+  line-height: 1.32 !important;
+}
+
+.pdf-export-doc .resume-exp {
+  margin: 0 0 0.28rem !important;
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+}
+
+.pdf-export-doc .resume-exp-pos {
+  margin: 0.04rem 0 0.16rem !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+
+.pdf-export-doc .resume-exp-head {
+  margin: 0 !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  break-after: avoid !important;
+  page-break-after: avoid !important;
+}
+
+.pdf-export-doc .resume-bullets,
+.pdf-export-doc .resume-certs {
+  margin: 0 !important;
+}
+
+.pdf-export-doc .resume-bullets li,
+.pdf-export-doc .resume-certs li {
+  margin-bottom: 0.08rem !important;
+  line-height: 1.25 !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
 
 /* --- Final Check panel --- */
 .final-check {
