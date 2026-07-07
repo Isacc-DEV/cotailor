@@ -287,9 +287,10 @@ export default function AdminStyles() {
     <div>
       <div className="styles-header">
         <h1>Resume Styles</h1>
-        <Button variant="primary" onClick={() => openEditor()} disabled={busy}>
-          + New style
-        </Button>
+        <button className="style-create-action" onClick={() => openEditor()} disabled={busy} type="button">
+          <span className="style-action-icon style-icon-plus" aria-hidden="true" />
+          <span>New style</span>
+        </button>
       </div>
 
       {error && <div className="admin-error">{error}</div>}
@@ -309,21 +310,52 @@ export default function AdminStyles() {
               </div>
             </div>
             <div className="style-row-actions">
-              <Button variant="secondary" onClick={() => openEditor(s)} disabled={busy}>
-                Edit
-              </Button>
-              <Button variant="secondary" onClick={() => openEditor(s, true)} disabled={busy} title="Start a new style from this one">
-                Duplicate
-              </Button>
+              <button
+                className="style-action-btn edit"
+                onClick={() => openEditor(s)}
+                disabled={busy}
+                title="Edit style"
+                type="button"
+              >
+                <span className="style-action-icon style-icon-edit" aria-hidden="true" />
+                <span>Edit</span>
+              </button>
+              <button
+                className="style-action-btn duplicate"
+                onClick={() => openEditor(s, true)}
+                disabled={busy}
+                title="Start a new style from this one"
+                type="button"
+              >
+                <span className="style-action-icon style-icon-duplicate" aria-hidden="true" />
+                <span>Duplicate</span>
+              </button>
               {!s.isDefault && (
-                <Button variant="secondary" onClick={() => toggleEnabled(s)} disabled={busy}>
-                  {s.enabled ? 'Disable' : 'Enable'}
-                </Button>
+                <button
+                  className={`style-action-btn ${s.enabled ? 'disable' : 'enable'}`}
+                  onClick={() => toggleEnabled(s)}
+                  disabled={busy}
+                  title={s.enabled ? 'Disable style' : 'Enable style'}
+                  type="button"
+                >
+                  <span
+                    className={`style-action-icon ${s.enabled ? 'style-icon-disable' : 'style-icon-enable'}`}
+                    aria-hidden="true"
+                  />
+                  <span>{s.enabled ? 'Disable' : 'Enable'}</span>
+                </button>
               )}
               {!s.isDefault && s.usageCount === 0 && (
-                <Button variant="danger" onClick={() => setDeleteTarget(s)} disabled={busy}>
-                  Delete
-                </Button>
+                <button
+                  className="style-action-btn delete"
+                  onClick={() => setDeleteTarget(s)}
+                  disabled={busy}
+                  title="Delete style"
+                  type="button"
+                >
+                  <span className="style-action-icon style-icon-delete" aria-hidden="true" />
+                  <span>Delete</span>
+                </button>
               )}
             </div>
           </div>

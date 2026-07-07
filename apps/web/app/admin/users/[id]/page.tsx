@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api-client';
-import { Button, Spinner } from '@/app/components/ui';
-import ConfirmDialog from '@/app/components/ui/ConfirmDialog';
+import { Spinner } from '@/app/components/ui';
 import { getStoredUser } from '@/lib/auth';
 import { formatRelativeTime } from '@/lib/format-time';
 
@@ -15,7 +14,10 @@ const EVENT_LABELS: Record<string, string> = {
   'admin.user.role_change': 'Role changed',
 };
 
-type PendingAction = 'approve' | 'suspend' | 'reactivate' | 'promote' | 'demote' | null;
+const ROLE_LABELS = {
+  admin: 'Admin',
+  user: 'User',
+} as const;
 
 export default function AdminUserDetail() {
   const router = useRouter();
@@ -24,8 +26,6 @@ export default function AdminUserDetail() {
 
   const [user, setUser] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [pending, setPending] = useState<PendingAction>(null);
 
   const self = getStoredUser();
   const isSelf = self?.id === user?.id;
@@ -38,68 +38,18 @@ export default function AdminUserDetail() {
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load user'));
   }, [id]);
 
-  const applyAction = async (action: Exclude<PendingAction, null>) => {
-    if (!id) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const patch =
-        action === 'suspend'
-          ? { status: 'suspended' as const }
-          : action === 'approve' || action === 'reactivate'
-            ? { status: 'active' as const }
-            : action === 'promote'
-              ? { role: 'admin' as const }
-              : { role: 'user' as const };
-      const updated = await api.admin.users.update(id, patch);
-      setUser(updated);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Action failed');
-    } finally {
-      setBusy(false);
-      setPending(null);
-    }
-  };
-
   if (error && !user) return <div className="admin-error">{error}</div>;
   if (!user) return <Spinner text="Loading user..." />;
 
   const sessionEntries = Object.entries(user.sessionsByState ?? {}) as Array<[string, number]>;
   const totalSessions = sessionEntries.reduce((sum, [, n]) => sum + n, 0);
 
-  const confirmCopy: Record<Exclude<PendingAction, null>, { title: string; message: string; confirm: string }> = {
-    approve: {
-      title: 'Approve account?',
-      message: 'The account becomes active and the user can sign in immediately.',
-      confirm: 'Approve',
-    },
-    suspend: {
-      title: 'Suspend user?',
-      message: 'They will be signed out and unable to sign in until reactivated. Their data is kept.',
-      confirm: 'Suspend',
-    },
-    reactivate: {
-      title: 'Reactivate user?',
-      message: 'They will be able to sign in again immediately.',
-      confirm: 'Reactivate',
-    },
-    promote: {
-      title: 'Make admin?',
-      message: 'They gain full access to the Manage area: users, and future style/settings management.',
-      confirm: 'Make admin',
-    },
-    demote: {
-      title: 'Remove admin access?',
-      message: 'They become a regular user and lose access to the Manage area immediately.',
-      confirm: 'Remove admin',
-    },
-  };
-
   return (
-    <div>
-      <Button variant="secondary" onClick={() => router.push('/admin/users')}>
-        ← Back to users
-      </Button>
+    <div className="admin-detail-page">
+      <button className="admin-back-link" onClick={() => router.push('/admin/users')} type="button">
+        <span className="admin-back-icon" aria-hidden="true" />
+        <span>Users</span>
+      </button>
 
       <div className="admin-detail-header" style={{ marginTop: '1rem' }}>
         <div className="admin-detail-identity">
@@ -109,32 +59,6 @@ export default function AdminUserDetail() {
             {isSelf ? ' · this is you' : ''}
           </span>
         </div>
-        <div className="admin-detail-actions">
-          {user.status === 'active' &&
-            (user.role === 'user' ? (
-              <Button variant="secondary" disabled={busy} onClick={() => setPending('promote')}>
-                Make admin
-              </Button>
-            ) : (
-              <Button variant="secondary" disabled={busy || isSelf} onClick={() => setPending('demote')}>
-                Remove admin
-              </Button>
-            ))}
-          {user.status === 'pending' && (
-            <Button variant="primary" disabled={busy} onClick={() => setPending('approve')}>
-              Approve
-            </Button>
-          )}
-          {user.status === 'suspended' ? (
-            <Button variant="primary" disabled={busy} onClick={() => setPending('reactivate')}>
-              Reactivate
-            </Button>
-          ) : (
-            <Button variant="danger" disabled={busy || isSelf} onClick={() => setPending('suspend')}>
-              {user.status === 'pending' ? 'Reject' : 'Suspend'}
-            </Button>
-          )}
-        </div>
       </div>
 
       {error && <div className="admin-error">{error}</div>}
@@ -143,7 +67,10 @@ export default function AdminUserDetail() {
         <div className="kv-item">
           <div className="kv-label">Role</div>
           <div className="kv-value">
-            <span className={`role-badge ${user.role}`}>{user.role}</span>
+            <span className={`role-badge role-badge-list ${user.role}`}>
+              <span className="role-badge-icon" aria-hidden="true" />
+              <span className="role-badge-label">{ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] ?? user.role}</span>
+            </span>
           </div>
         </div>
         <div className="kv-item">
@@ -227,16 +154,6 @@ export default function AdminUserDetail() {
           ))}
         </ul>
       )}
-
-      <ConfirmDialog
-        isOpen={pending !== null}
-        title={pending ? confirmCopy[pending].title : ''}
-        message={pending ? confirmCopy[pending].message : ''}
-        itemName={user.email}
-        confirmText={pending ? confirmCopy[pending].confirm : 'Confirm'}
-        onConfirm={() => pending && applyAction(pending)}
-        onCancel={() => setPending(null)}
-      />
     </div>
   );
 }
