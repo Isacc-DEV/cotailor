@@ -108,20 +108,62 @@ export const api = {
         name: string | null;
         role: 'user' | 'admin';
         status: 'pending' | 'active';
+        theme?: 'light' | 'dark' | 'system';
+        aiProviderMode?: 'cotailor' | 'own_keys';
         token?: string;
         message?: string;
       }>('/auth/signup', { method: 'POST', body: JSON.stringify(data) });
     },
 
     signin: async (data: { email: string; password: string }) => {
-      return request<{ userId: string; email: string; name: string | null; role: 'user' | 'admin'; token: string }>(
-        '/auth/signin',
-        { method: 'POST', body: JSON.stringify(data) },
-      );
+      return request<{
+        userId: string;
+        email: string;
+        name: string | null;
+        role: 'user' | 'admin';
+        theme: 'light' | 'dark' | 'system';
+        aiProviderMode: 'cotailor' | 'own_keys';
+        token: string;
+      }>('/auth/signin', { method: 'POST', body: JSON.stringify(data) });
     },
 
     me: async () => {
-      return request<{ userId: string; email: string; name: string | null; role: 'user' | 'admin' }>('/auth/me');
+      return request<{
+        userId: string;
+        email: string;
+        name: string | null;
+        role: 'user' | 'admin';
+        theme: 'light' | 'dark' | 'system';
+        aiProviderMode: 'cotailor' | 'own_keys';
+      }>('/auth/me');
+    },
+
+    // Update the current user's editable settings (display name, theme, AI
+    // provider mode). Returns the fresh me-shape.
+    updateMe: async (patch: {
+      name?: string;
+      theme?: 'light' | 'dark' | 'system';
+      aiProviderMode?: 'cotailor' | 'own_keys';
+    }) => {
+      return request<{
+        userId: string;
+        email: string;
+        name: string | null;
+        role: 'user' | 'admin';
+        theme: 'light' | 'dark' | 'system';
+        aiProviderMode: 'cotailor' | 'own_keys';
+      }>('/auth/me', { method: 'PATCH', body: JSON.stringify(patch) });
+    },
+
+    changePassword: async (data: { currentPassword: string; newPassword: string }) => {
+      return request<{ changed: boolean }>('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    deactivate: async () => {
+      return request<{ deactivated: boolean }>('/auth/deactivate', { method: 'POST' });
     },
   },
 

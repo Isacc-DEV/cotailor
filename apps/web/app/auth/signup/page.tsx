@@ -61,7 +61,14 @@ export default function SignUp() {
         return;
       }
 
-      setAuth(data.token, { id: data.userId, email: data.email, name: data.name || formData.name, role: data.role });
+      setAuth(data.token, {
+        id: data.userId,
+        email: data.email,
+        name: data.name || formData.name,
+        role: data.role,
+        theme: data.theme,
+        aiProviderMode: data.aiProviderMode,
+      });
       router.push('/profile-selector');
     } catch (err) {
       setServerError(err.message || 'Sign up failed. Please try again.');
