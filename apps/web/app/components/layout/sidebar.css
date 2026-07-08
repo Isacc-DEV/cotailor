@@ -89,14 +89,11 @@
 .brand-icon {
   width: 28px;
   height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent);
-  color: #ffffff;
+  display: block;
+  flex-shrink: 0;
+  object-fit: cover;
   border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 700;
+  background: #ffffff;
 }
 
 .brand-text {

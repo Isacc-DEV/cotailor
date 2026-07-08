@@ -223,7 +223,7 @@ export function Sidebar() {
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
           <button className="brand-link" onClick={() => handleNavigation('/')}>
-            <span className="brand-icon">C</span>
+            <img className="brand-icon" src="/logo.png" alt="CoTailor logo" width={28} height={28} />
             <span className="brand-text">CoTailor</span>
           </button>
           <button className="close-btn" onClick={() => setIsOpen(false)} aria-label="Close menu">
