@@ -22,20 +22,60 @@ export function categoryRelation(profileCategory: string, jdCategory: string): '
   return norm(profileCategory) === norm(jdCategory) ? 'same' : 'distinct';
 }
 
-// Known subtype subsumption: JD subtype ⊃ profile subtype (Section 8.4).
-const SUBSUMES: Record<string, string[]> = {
-  'full stack engineer': ['backend engineer', 'frontend engineer'],
-  'full-stack engineer': ['backend engineer', 'frontend engineer'],
+// Role-noun suffixes that don't change the discipline: "Backend Engineer",
+// "Backend Developer" and "backendengineer" all mean "backend". Longest-first
+// so "engineering" is stripped before the shorter "engineer" can partial-match.
+const ROLE_NOUNS = [
+  'engineering',
+  'engineer',
+  'developer',
+  'programmer',
+  'specialist',
+  'architect',
+  'dev',
+];
+
+// Collapse a subtype to a comparable key: lowercase, drop every separator (so
+// "full stack", "full-stack" and "fullstack" agree) and strip one trailing role
+// noun. "Backend" / "Backend Engineer" / "backendengineer" all → "backend".
+function canonSubtype(s: string): string {
+  let x = s.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  for (const noun of ROLE_NOUNS) {
+    if (x.length > noun.length && x.endsWith(noun)) {
+      x = x.slice(0, -noun.length);
+      break;
+    }
+  }
+  return x;
+}
+
+// Broad subtypes and the narrower ones they fully contain (Section 8.4).
+// A Full Stack engineer does both backend and frontend work.
+const CONTAINS: Record<string, string[]> = {
+  fullstack: ['backend', 'frontend'],
 };
 
+// Any shared meaningful word (role nouns excluded) → the subtypes at least overlap.
+function sharesWord(a: string, b: string): boolean {
+  const words = (s: string) =>
+    new Set(
+      s
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((w) => w.length > 3 && !ROLE_NOUNS.includes(w)),
+    );
+  const wa = words(a);
+  return [...words(b)].some((w) => wa.has(w));
+}
+
 export function subtypeRelation(profileSubtype: string, jdSubtype: string): SubtypeRelation {
-  const p = norm(profileSubtype);
-  const j = norm(jdSubtype);
-  if (p === j) return 'same';
-  if ((SUBSUMES[j] ?? []).includes(p)) return 'subsumes';
-  const pWords = new Set(p.split(/\s+/));
-  const shares = j.split(/\s+/).some((w) => w.length > 3 && pWords.has(w));
-  return shares ? 'overlaps' : 'sibling';
+  const p = canonSubtype(profileSubtype);
+  const j = canonSubtype(jdSubtype);
+  if (!p || !j) return 'same'; // one side unknown → don't raise a soft gate on noise
+  if (p === j) return 'same'; // same discipline, modulo "engineer"/"developer" phrasing
+  if ((CONTAINS[p] ?? []).includes(j)) return 'same'; // profile is broader and fully covers the JD
+  if ((CONTAINS[j] ?? []).includes(p)) return 'subsumes'; // JD is broader — soft warning, proceed is fine
+  return sharesWord(profileSubtype, jdSubtype) ? 'overlaps' : 'sibling';
 }
 
 function norm(s: string): string {
