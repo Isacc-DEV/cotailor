@@ -5,3 +5,5 @@ export * from './gates';
 export * from './skills';
 export * from './profile';
 export * from './resume-style';
+export * from './certifications';
+export * from './taxonomy';
