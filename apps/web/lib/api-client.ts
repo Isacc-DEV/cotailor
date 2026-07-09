@@ -135,6 +135,7 @@ export const api = {
         role: 'user' | 'admin';
         theme: 'light' | 'dark' | 'system';
         aiProviderMode: 'cotailor' | 'own_keys';
+        certSuggestionCount: number;
       }>('/auth/me');
     },
 
@@ -144,6 +145,7 @@ export const api = {
       name?: string;
       theme?: 'light' | 'dark' | 'system';
       aiProviderMode?: 'cotailor' | 'own_keys';
+      certSuggestionCount?: number;
     }) => {
       return request<{
         userId: string;
@@ -152,6 +154,7 @@ export const api = {
         role: 'user' | 'admin';
         theme: 'light' | 'dark' | 'system';
         aiProviderMode: 'cotailor' | 'own_keys';
+        certSuggestionCount: number;
       }>('/auth/me', { method: 'PATCH', body: JSON.stringify(patch) });
     },
 
@@ -179,6 +182,51 @@ export const api = {
           config: any;
         }>
       >('/resume-styles');
+    },
+  },
+
+  // Signed-in users: search the manager's cert catalog for the profile form,
+  // and flag a cert that's missing so a manager can add it.
+  certifications: {
+    search: async (params: { search?: string; category?: string; subtype?: string } = {}) => {
+      const qs = new URLSearchParams();
+      if (params.search) qs.set('search', params.search);
+      if (params.category) qs.set('category', params.category);
+      if (params.subtype) qs.set('subtype', params.subtype);
+      const suffix = qs.toString() ? `?${qs.toString()}` : '';
+      return request<
+        Array<{
+          id: string;
+          name: string;
+          issuer: string;
+          level: string | null;
+          categories: string[];
+          subtypes: string[];
+          aliases: string[];
+        }>
+      >(`/certifications${suffix}`);
+    },
+
+    requestMissing: async (body: { rawText: string; issuer?: string; category?: string; subtype?: string }) => {
+      return request<{ id: string; rawText: string; status: string }>('/certifications/requests', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+  },
+
+  // Managed role taxonomy (Category -> Subtype) for the profile form + cert pickers.
+  taxonomy: {
+    tree: async () => {
+      return request<
+        Array<{
+          id: string;
+          name: string;
+          sortOrder: number;
+          enabled: boolean;
+          subtypes: Array<{ id: string; name: string; sortOrder: number; enabled: boolean }>;
+        }>
+      >('/taxonomy');
     },
   },
 
@@ -295,6 +343,82 @@ export const api = {
       delete: async (id: string) => {
         return request<{ deleted: boolean }>(`/admin/resume-styles/${id}`, {
           method: 'DELETE',
+        });
+      },
+    },
+
+    certifications: {
+      list: async (params: { search?: string; category?: string; subtype?: string } = {}) => {
+        const qs = new URLSearchParams();
+        if (params.search) qs.set('search', params.search);
+        if (params.category) qs.set('category', params.category);
+        if (params.subtype) qs.set('subtype', params.subtype);
+        const suffix = qs.toString() ? `?${qs.toString()}` : '';
+        return request<
+          Array<{
+            id: string;
+            name: string;
+            issuer: string;
+            level: string | null;
+            categories: string[];
+            subtypes: string[];
+            aliases: string[];
+            enabled: boolean;
+            updatedAt: string;
+          }>
+        >(`/admin/certifications${suffix}`);
+      },
+
+      create: async (data: {
+        name: string;
+        issuer: string;
+        level?: string;
+        categories: string[];
+        subtypes: string[];
+        aliases: string[];
+        enabled?: boolean;
+      }) => {
+        return request<any>('/admin/certifications', { method: 'POST', body: JSON.stringify(data) });
+      },
+
+      update: async (
+        id: string,
+        data: Partial<{
+          name: string;
+          issuer: string;
+          level: string | null;
+          categories: string[];
+          subtypes: string[];
+          aliases: string[];
+          enabled: boolean;
+        }>,
+      ) => {
+        return request<any>(`/admin/certifications/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+      },
+
+      delete: async (id: string) => {
+        return request<{ deleted: boolean }>(`/admin/certifications/${id}`, { method: 'DELETE' });
+      },
+
+      todos: async (status: 'open' | 'done' | 'dismissed' = 'open') => {
+        return request<
+          Array<{
+            id: string;
+            rawText: string;
+            issuer: string | null;
+            category: string | null;
+            subtype: string | null;
+            requestedBy: string | null;
+            status: string;
+            createdAt: string;
+          }>
+        >(`/admin/certifications/todos/list?status=${status}`);
+      },
+
+      resolveTodo: async (id: string, status: 'done' | 'dismissed') => {
+        return request<any>(`/admin/certifications/todos/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status }),
         });
       },
     },
