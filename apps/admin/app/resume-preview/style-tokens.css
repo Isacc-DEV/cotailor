@@ -1,0 +1,202 @@
+/* Visual resume-style tokens (see @cotailor/shared resume-style.ts).
+   Every rule is scoped under .resume-doc + an rs-* modifier class set by
+   lib/resume-style.ts, and must beat the base .resume-doc rules in page.css
+   by specificity. Loaded by the resume preview and the admin style editor. */
+
+/* --- fonts (stacks come from FONT_STACKS via inline CSS variables) --- */
+.resume-doc.rs {
+  font-family: var(--rs-body-font, inherit);
+}
+.resume-doc.rs .resume-doc-header h2,
+.resume-doc.rs .resume-section-title {
+  font-family: var(--rs-head-font, var(--rs-body-font, inherit));
+}
+
+/* --- accent (variable set inline; black accent = theme text color) --- */
+.resume-doc.rs .resume-doc-header h2 {
+  color: var(--rs-accent, var(--text-primary));
+}
+.resume-doc.rs .resume-section-title {
+  color: var(--rs-accent, var(--text-primary));
+}
+
+/* --- density --- */
+.resume-doc.rs-density-compact {
+  padding: 1.4rem 1.6rem;
+}
+.resume-doc.rs-density-compact .resume-doc-header {
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+.resume-doc.rs-density-compact .resume-section-title {
+  margin: 0.85rem 0 0.4rem;
+}
+.resume-doc.rs-density-compact .resume-exp {
+  margin-bottom: 0.6rem;
+}
+.resume-doc.rs-density-compact .resume-bullets li {
+  font-size: 0.84rem;
+  line-height: 1.32;
+  margin-bottom: 0.15rem;
+}
+.resume-doc.rs-density-compact .resume-summary-text {
+  line-height: 1.4;
+}
+
+.resume-doc.rs-density-airy {
+  padding: 2.5rem 2.75rem;
+}
+.resume-doc.rs-density-airy .resume-doc-header {
+  padding-bottom: 1.3rem;
+  margin-bottom: 1.6rem;
+}
+.resume-doc.rs-density-airy .resume-section-title {
+  margin: 1.6rem 0 0.8rem;
+}
+.resume-doc.rs-density-airy .resume-exp {
+  margin-bottom: 1.4rem;
+}
+.resume-doc.rs-density-airy .resume-bullets li {
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+}
+.resume-doc.rs-density-airy .resume-summary-text {
+  line-height: 1.7;
+}
+
+/* --- header alignment (base is centered) --- */
+.resume-doc.rs-header-left .resume-doc-header {
+  text-align: left;
+}
+
+/* --- section title treatments (base is underline) --- */
+.resume-doc.rs-title-caps-spaced .resume-section-title {
+  border-bottom: none;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  padding-bottom: 0;
+}
+.resume-doc.rs-title-accent-bar .resume-section-title {
+  border-bottom: none;
+  border-left: 3px solid var(--rs-accent, var(--text-primary));
+  padding: 0.05rem 0 0.05rem 0.55rem;
+}
+
+/* --- bullet markers (base is disc) --- */
+.resume-doc.rs-bullet-dash .resume-bullets,
+.resume-doc.rs-bullet-arrow .resume-bullets {
+  list-style: none;
+  padding-left: 0.2rem;
+}
+.resume-doc.rs-bullet-dash .resume-bullets > li,
+.resume-doc.rs-bullet-arrow .resume-bullets > li {
+  padding-left: 1rem;
+}
+.resume-doc.rs-bullet-dash .resume-bullets > li::before {
+  content: '\2013'; /* en dash */
+  position: absolute;
+  left: 0;
+}
+.resume-doc.rs-bullet-arrow .resume-bullets > li::before {
+  content: '\25B8'; /* small right-pointing triangle */
+  position: absolute;
+  left: 0;
+  color: var(--rs-accent, var(--text-primary));
+}
+
+/* --- name scale --- */
+.resume-doc.rs-name-large .resume-doc-header h2 {
+  font-size: 2.05rem;
+  letter-spacing: 0.01em;
+}
+
+/* --- body text scale (base is normal) --- */
+.resume-doc.rs-text-small .resume-bullets li,
+.resume-doc.rs-text-small .resume-certs li {
+  font-size: 0.82rem;
+}
+.resume-doc.rs-text-small .resume-summary-text,
+.resume-doc.rs-text-small .resume-skills {
+  font-size: 0.84rem;
+}
+.resume-doc.rs-text-small .resume-exp-head {
+  font-size: 0.86rem;
+}
+.resume-doc.rs-text-large .resume-bullets li,
+.resume-doc.rs-text-large .resume-certs li {
+  font-size: 0.95rem;
+}
+.resume-doc.rs-text-large .resume-summary-text,
+.resume-doc.rs-text-large .resume-skills {
+  font-size: 0.97rem;
+}
+.resume-doc.rs-text-large .resume-exp-head {
+  font-size: 0.97rem;
+}
+
+/* --- header rule (the line under the contact header; base is strong 2px) --- */
+.resume-doc.rs-hrule-thin .resume-doc-header {
+  border-bottom-width: 1px;
+  border-bottom-color: var(--border-color);
+}
+.resume-doc.rs-hrule-accent .resume-doc-header {
+  border-bottom-color: var(--rs-accent, var(--text-primary));
+}
+.resume-doc.rs-hrule-none .resume-doc-header {
+  border-bottom: none;
+  padding-bottom: 0.4rem;
+}
+
+/* --- skills layout (base is an inline dot-separated line) --- */
+.resume-doc.rs .resume-skills-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+}
+.resume-doc.rs .skill-pill {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  white-space: nowrap;
+}
+.resume-doc.rs-text-small .skill-pill {
+  font-size: 0.75rem;
+}
+
+/* --- print: keep the tokens in the exported PDF --------------------------
+   page.css forces black-on-white for the whole document; these higher-
+   specificity rules re-apply the accent to the name and section titles only,
+   so body text stays pure black for readability and ATS scans. */
+@media print {
+  .resume-doc.rs .resume-doc-header h2,
+  .resume-doc.rs .resume-section-title {
+    color: var(--rs-accent-print, #000) !important;
+  }
+  .resume-doc.rs-title-caps-spaced .resume-section-title {
+    border-bottom: none !important;
+  }
+  .resume-doc.rs-title-accent-bar .resume-section-title {
+    border-bottom: none !important;
+    border-left: 3px solid var(--rs-accent-print, #000) !important;
+  }
+  .resume-doc.rs-bullet-arrow .resume-bullets > li::before {
+    color: var(--rs-accent-print, #000) !important;
+  }
+  .resume-doc.rs-hrule-thin .resume-doc-header {
+    border-bottom: 1px solid #888 !important;
+  }
+  .resume-doc.rs-hrule-accent .resume-doc-header {
+    border-bottom: 2px solid var(--rs-accent-print, #000) !important;
+  }
+  .resume-doc.rs-hrule-none .resume-doc-header {
+    border-bottom: none !important;
+  }
+  .resume-doc.rs .skill-pill {
+    border: 1px solid #999 !important;
+  }
+  /* Font variables flow into print from the same inline style — no print
+     overrides needed; page.css's print block never touches font-family. */
+}
