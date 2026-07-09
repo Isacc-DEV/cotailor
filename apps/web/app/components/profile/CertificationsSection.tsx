@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, ConfirmDialog } from '@/app/components/ui';
 import { useConfirmDialog } from '@/app/hooks/useConfirmDialog';
 import { formatDate as formatDisplayDate } from '@/app/lib/date-format';
+import { api } from '@/lib/api-client';
 import './CertificationsSection.css';
 
 interface CertificationItem {
@@ -13,6 +14,8 @@ interface CertificationItem {
   expiryDate?: string;
   credentialId?: string;
   credentialUrl?: string;
+  /** Set when the user picked this cert from the manager's catalog (enables exact matching later). */
+  catalogId?: string | null;
 }
 
 interface Props {
@@ -33,6 +36,63 @@ export default function CertificationsSection({
   const [editingData, setEditingData] = useState<CertificationItem | null>(null);
   const [noExpiry, setNoExpiry] = useState(false);
 
+  // Catalog picker: search the manager's catalog and pick a cert (links it), or
+  // request one that's missing so a manager can add it.
+  const [catalogQuery, setCatalogQuery] = useState('');
+  const [catalogResults, setCatalogResults] = useState<Array<{ id: string; name: string; issuer: string }>>([]);
+  const [searching, setSearching] = useState(false);
+  const [requested, setRequested] = useState(false);
+
+  useEffect(() => {
+    const q = catalogQuery.trim();
+    if (q.length < 2) {
+      setCatalogResults([]);
+      return;
+    }
+    let stale = false;
+    setSearching(true);
+    const t = setTimeout(() => {
+      api.certifications
+        .search({ search: q })
+        .then((r) => {
+          if (!stale) setCatalogResults(r.slice(0, 8).map((c) => ({ id: c.id, name: c.name, issuer: c.issuer })));
+        })
+        .catch(() => {
+          if (!stale) setCatalogResults([]);
+        })
+        .finally(() => {
+          if (!stale) setSearching(false);
+        });
+    }, 250);
+    return () => {
+      stale = true;
+      clearTimeout(t);
+    };
+  }, [catalogQuery]);
+
+  const resetCatalog = () => {
+    setCatalogQuery('');
+    setCatalogResults([]);
+    setRequested(false);
+  };
+
+  const pickFromCatalog = (r: { id: string; name: string; issuer: string }) => {
+    setEditingData((prev) => (prev ? { ...prev, name: r.name, issuer: r.issuer, catalogId: r.id } : prev));
+    setCatalogQuery('');
+    setCatalogResults([]);
+  };
+
+  const handleRequestMissing = async () => {
+    const raw = (catalogQuery || editingData?.name || '').trim();
+    if (!raw) return;
+    try {
+      await api.certifications.requestMissing({ rawText: raw });
+      setRequested(true);
+    } catch {
+      /* non-blocking — the user can still add it manually */
+    }
+  };
+
   const { state: confirmState, open: openConfirm, close: closeConfirm } = useConfirmDialog();
   const [pendingConfirm, setPendingConfirm] = useState<(() => void) | null>(null);
 
@@ -52,12 +112,14 @@ export default function CertificationsSection({
       credentialUrl: '',
     });
     setNoExpiry(false);
+    resetCatalog();
   };
 
   const handleEdit = (id: number) => {
     setEditingId(id);
     setEditingData({ ...certifications[id] });
     setNoExpiry(!certifications[id].expiryDate);
+    resetCatalog();
   };
 
   const handleSave = () => {
@@ -103,6 +165,7 @@ export default function CertificationsSection({
     setEditingId(null);
     setEditingData(null);
     setNoExpiry(false);
+    resetCatalog();
   };
 
   const formatDate = (dateStr?: string) => formatDisplayDate(dateStr);
@@ -131,6 +194,86 @@ export default function CertificationsSection({
         <h2 className="section-title">Certifications</h2>
 
         <div className="certification-form">
+          <div className="form-group">
+            <label htmlFor="certCatalog">Find in the catalog</label>
+            <input
+              type="text"
+              id="certCatalog"
+              value={catalogQuery}
+              onChange={(e) => {
+                setCatalogQuery(e.target.value);
+                setRequested(false);
+              }}
+              placeholder="Search certifications (e.g. AWS, PMP, Scrum)…"
+              autoComplete="off"
+              disabled={disabled}
+            />
+            {editingData.catalogId && (
+              <p className="field-help" style={{ color: 'var(--success, #2e7d46)' }}>
+                ✓ Linked to the catalog
+              </p>
+            )}
+            {catalogQuery.trim().length >= 2 && (
+              <div
+                style={{
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 8,
+                  marginTop: 6,
+                  overflow: 'hidden',
+                }}
+              >
+                {searching && (
+                  <div style={{ padding: '8px 10px', color: 'var(--text-tertiary)', fontSize: '0.85rem' }}>
+                    Searching…
+                  </div>
+                )}
+                {!searching && catalogResults.length === 0 && (
+                  <div style={{ padding: '8px 10px', fontSize: '0.85rem' }}>
+                    Not in our catalog.{' '}
+                    <button
+                      type="button"
+                      onClick={handleRequestMissing}
+                      disabled={requested}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--accent)',
+                        cursor: 'pointer',
+                        padding: 0,
+                        font: 'inherit',
+                        textDecoration: 'underline',
+                      }}
+                    >
+                      {requested ? 'Requested ✓' : 'Request it be added'}
+                    </button>
+                  </div>
+                )}
+                {!searching &&
+                  catalogResults.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => pickFromCatalog(r)}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '8px 10px',
+                        background: 'none',
+                        border: 'none',
+                        borderTop: '1px solid var(--border-light)',
+                        cursor: 'pointer',
+                        color: 'var(--text-primary)',
+                      }}
+                    >
+                      <strong>{r.name}</strong>{' '}
+                      <span style={{ color: 'var(--text-tertiary)' }}>· {r.issuer}</span>
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
+
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="certName">Certification Name *</label>

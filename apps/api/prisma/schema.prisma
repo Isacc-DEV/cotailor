@@ -146,6 +146,7 @@ model User {
   status         UserStatus         @default(pending)
   theme          ThemePref          @default(system)
   aiProviderMode AiProviderMode     @default(cotailor)
+  certSuggestionCount Int           @default(3) // how many certs the AI suggests per job (user setting)
   verifiedAt     DateTime? // when an admin approved the account
   disabledAt     DateTime? // when the current suspension started
   createdAt      DateTime           @default(now())
@@ -200,8 +201,91 @@ model ProfileCertification {
   profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   name      String
   issuer    String?
+  catalogId String? // links to CertificationCatalog when picked from the catalog; null = custom entry
 
   @@index([profileId])
+}
+
+// Manager-curated certification library. The AI may only SELECT from these
+// rows — it never invents a cert name. Filed under one category and many
+// subtypes so one cert (e.g. AWS Solutions Architect) surfaces for Backend,
+// DevOps, Cloud, etc. all at once.
+model CertificationCatalog {
+  id         String   @id @default(cuid())
+  name       String // canonical display name
+  issuer     String
+  level      String? // foundational | associate | professional | specialty | single
+  categories String[] // top-level buckets — a cert can belong to several (e.g. AWS ML: Data Science + Software Engineering)
+  subtypes   String[] // subtypes this cert is relevant to (many)
+  aliases    String[] // nicknames used for matching
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// A cert a user says they hold but couldn't find in the catalog. Becomes an
+// item on the manager's to-do list to add to the catalog.
+model CertificationTodo {
+  id          String   @id @default(cuid())
+  rawText     String // exactly what the user typed
+  issuer      String?
+  category    String?
+  subtype     String?
+  requestedBy String? // userId who requested it
+  status      String   @default("open") // open | done | dismissed
+  createdAt   DateTime @default(now())
+
+  @@index([status])
+}
+
+// Manager-curated role taxonomy (2-level for now: Category -> Subtype; a
+// `familyId` mid-level lands in a later version). Replaces the hard-coded
+// CATEGORY_TAXONOMY / PROFILE_SUBTYPES constants — one managed source for the
+// profile form, the JD-analysis prompt, and the cert pickers. Names are the
+// stable keys (gates compare by name), so prefer disable/rename over delete.
+model TaxonomyCategory {
+  id        String            @id @default(cuid())
+  name      String            @unique
+  sortOrder Int               @default(100)
+  enabled   Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  families  TaxonomyFamily[]
+  subtypes  TaxonomySubtype[]
+}
+
+// Optional mid-level grouping inside a category. A subtype may live in a family
+// or directly under the category (familyId null = "ungrouped").
+model TaxonomyFamily {
+  id         String            @id @default(cuid())
+  categoryId String
+  category   TaxonomyCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name       String
+  sortOrder  Int               @default(100)
+  enabled    Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  subtypes   TaxonomySubtype[]
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+}
+
+model TaxonomySubtype {
+  id         String           @id @default(cuid())
+  categoryId String
+  category   TaxonomyCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  familyId   String?
+  family     TaxonomyFamily?  @relation(fields: [familyId], references: [id], onDelete: SetNull)
+  name       String
+  sortOrder  Int              @default(100)
+  enabled    Boolean          @default(true)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+  @@index([familyId])
 }
 
 model JdDocument {

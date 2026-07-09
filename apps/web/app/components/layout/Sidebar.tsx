@@ -341,19 +341,6 @@ export function Sidebar() {
                     <span className="account-menu-icon icon-settings" aria-hidden="true" />
                     <span>Settings</span>
                   </button>
-                  {user.role === 'admin' && (
-                    <button
-                      className="account-menu-item"
-                      role="menuitem"
-                      onClick={() => {
-                        setAccountMenuOpen(false);
-                        handleNavigation('/admin');
-                      }}
-                    >
-                      <span className="account-menu-icon icon-manage" aria-hidden="true" />
-                      <span>Manage</span>
-                    </button>
-                  )}
                   <div className="account-menu-divider" />
                   <button
                     className="account-menu-item"

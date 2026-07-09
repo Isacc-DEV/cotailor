@@ -32,6 +32,10 @@ export default function Settings() {
   // AI provider
   const [aiMode, setAiMode] = useState<AiProviderMode>('cotailor');
 
+  // Certification suggestions — how many certs the AI proposes per job.
+  const [certCount, setCertCount] = useState(3);
+  const [savingCertCount, setSavingCertCount] = useState(false);
+
   // Change password
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -77,6 +81,7 @@ export default function Settings() {
         setSavedName(me.name ?? '');
         setTheme(me.theme);
         setAiMode(me.aiProviderMode);
+        setCertCount(me.certSuggestionCount ?? 3);
         updateStoredUser({ name: me.name, theme: me.theme, aiProviderMode: me.aiProviderMode });
       })
       .catch(() => {
@@ -112,6 +117,20 @@ export default function Settings() {
       applyTheme(previous);
       updateStoredUser({ theme: previous });
       flash('error', err?.message || 'Could not save theme.');
+    }
+  };
+
+  const handleCertCountChange = async (next: number) => {
+    const previous = certCount;
+    setCertCount(next);
+    setSavingCertCount(true);
+    try {
+      await api.auth.updateMe({ certSuggestionCount: next });
+    } catch (err: any) {
+      setCertCount(previous);
+      flash('error', err?.message || 'Could not save your certification setting.');
+    } finally {
+      setSavingCertCount(false);
     }
   };
 
@@ -331,6 +350,33 @@ export default function Settings() {
                 </div>
               </div>
             </label>
+          </div>
+        </section>
+
+        {/* ===== Certification suggestions ===== */}
+        <section className="settings-section">
+          <h2>Certification suggestions</h2>
+          <p className="section-subtitle">
+            How many certifications the AI suggests for each job, picked from our curated catalog. Set to Off to skip
+            them entirely.
+          </p>
+
+          <div className="form-group">
+            <label htmlFor="cert-count">Suggestions per job</label>
+            <div className="inline-field">
+              <select
+                id="cert-count"
+                value={certCount}
+                onChange={(e) => handleCertCountChange(Number(e.target.value))}
+                disabled={savingCertCount}
+              >
+                {Array.from({ length: 11 }, (_, i) => (
+                  <option key={i} value={i}>
+                    {i === 0 ? 'Off' : `${i}`}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </section>
 

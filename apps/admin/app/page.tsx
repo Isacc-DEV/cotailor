@@ -43,7 +43,7 @@ export default function AdminDashboard() {
             {stats.users.pending} account{stats.users.pending === 1 ? '' : 's'}
           </strong>{' '}
           waiting for approval —{' '}
-          <a href="/admin/users?status=pending">review now</a>
+          <a href="/users?status=pending">review now</a>
         </div>
       )}
 

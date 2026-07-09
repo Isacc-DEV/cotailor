@@ -8,7 +8,13 @@ import type {
   ResumeValidation,
   ProfileImport,
 } from '@cotailor/shared';
-import type { BulletRewriteInput, LLMProvider, SummaryInput } from './llm-provider.interface';
+import type {
+  BulletRewriteInput,
+  CertSelectionInput,
+  LLMProvider,
+  SummaryInput,
+} from './llm-provider.interface';
+import type { CertSelectionResult } from '@cotailor/shared';
 
 const CIVIL = /\b(civil|structural|geotechnical|surveying|construction|mechanical engineering)\b/i;
 
@@ -16,6 +22,13 @@ const CIVIL = /\b(civil|structural|geotechnical|surveying|construction|mechanica
 // a Civil Engineering JD (→ category reject) and the FinTech Full Stack JD (→ subtype gate).
 @Injectable()
 export class StubLlmProvider implements LLMProvider {
+  // Deterministic: take the first `topN` candidates the caller already filtered
+  // to the job's subtype. Zero cost, good enough for dev.
+  async selectCertifications(input: CertSelectionInput): Promise<CertSelectionResult> {
+    const n = Math.max(0, Math.min(input.topN, input.candidates.length));
+    return { selected: input.candidates.slice(0, n).map((c) => ({ catalogId: c.id })) };
+  }
+
   async precheckJD(jdText: string): Promise<JdPrecheck> {
     const words = jdText.trim().split(/\s+/).filter(Boolean).length;
     return { is_job_description: words >= 50, language: 'en', char_count: jdText.length, red_flags: [] };

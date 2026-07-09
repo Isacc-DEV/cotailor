@@ -10,11 +10,8 @@ import { normalizeSkills } from '@/app/lib/normalize-skills';
 import WorkExperienceSection from '@/app/components/profile/WorkExperienceSection';
 import EducationSection from '@/app/components/profile/EducationSection';
 import CertificationsSection from '@/app/components/profile/CertificationsSection';
-import {
-  PROFILE_CATEGORIES as CATEGORIES,
-  PROFILE_SUBTYPES as SUBTYPES,
-} from '@cotailor/shared';
 import { useResumeStyleOptions } from '@/app/hooks/useResumeStyleOptions';
+import { useTaxonomy } from '@/app/hooks/useTaxonomy';
 import './page.css';
 
 interface Profile {
@@ -76,6 +73,7 @@ export default function ProfileEditor() {
 
   const { profiles, loading: loadingProfiles, updateProfile, deleteProfile } = useProfiles();
   const styleOptions = useResumeStyleOptions();
+  const { categories: CATEGORIES, subtypes: SUBTYPES } = useTaxonomy();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [formData, setFormData] = useState<Partial<Profile>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});

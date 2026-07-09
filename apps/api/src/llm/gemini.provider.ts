@@ -9,9 +9,15 @@ import type {
   ProfileImport,
 } from '@cotailor/shared';
 import { CATEGORY_TAXONOMY } from '@cotailor/shared';
-import type { BulletRewriteInput, LLMProvider, SummaryInput } from './llm-provider.interface';
+import type { CertSelectionResult } from '@cotailor/shared';
+import type {
+  BulletRewriteInput,
+  CertSelectionInput,
+  LLMProvider,
+  SummaryInput,
+} from './llm-provider.interface';
 import { StubLlmProvider } from './stub.provider';
-import { buildParseResumePrompt } from './prompts';
+import { buildParseResumePrompt, buildSelectCertsPrompt } from './prompts';
 
 // Real provider backed by Google Gemini (REST, no SDK dependency).
 // Only the methods the current flow exercises are LLM-powered
@@ -76,6 +82,16 @@ export class GeminiProvider implements LLMProvider {
   // Cheap heuristic — avoids a round-trip for the precheck gate.
   async precheckJD(jdText: string): Promise<JdPrecheck> {
     return this.fallback.precheckJD(jdText);
+  }
+
+  async selectCertifications(input: CertSelectionInput): Promise<CertSelectionResult> {
+    if (!input.candidates.length || input.topN <= 0) return { selected: [] };
+    const out = await this.callJson<CertSelectionResult>(buildSelectCertsPrompt(input), 0.1);
+    // Guardrail: keep only ids that were actually offered — the model can never
+    // introduce a cert that isn't in the manager's list.
+    const valid = new Set(input.candidates.map((c) => c.id));
+    const selected = (out.selected ?? []).filter((s) => valid.has(s.catalogId)).slice(0, input.topN);
+    return { selected };
   }
 
   async analyzeJD(jdText: string): Promise<JdAnalysis> {

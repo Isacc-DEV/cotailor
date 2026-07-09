@@ -267,7 +267,7 @@ export default function AdminUsers() {
                 {data.users.map((u) => {
                   const roleLabel = roleLabels[u.role];
                   return (
-                    <tr key={u.id} className="clickable" onClick={() => router.push(`/admin/users/${u.id}`)}>
+                    <tr key={u.id} className="clickable" onClick={() => router.push(`/users/${u.id}`)}>
                       <td>
                         <div>{u.email}</div>
                         {u.name && <div className="admin-muted">{u.name}</div>}

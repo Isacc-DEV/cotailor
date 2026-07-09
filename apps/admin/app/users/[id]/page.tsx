@@ -46,7 +46,7 @@ export default function AdminUserDetail() {
 
   return (
     <div className="admin-detail-page">
-      <button className="admin-back-link" onClick={() => router.push('/admin/users')} type="button">
+      <button className="admin-back-link" onClick={() => router.push('/users')} type="button">
         <span className="admin-back-icon" aria-hidden="true" />
         <span>Users</span>
       </button>

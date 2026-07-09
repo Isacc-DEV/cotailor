@@ -178,6 +178,7 @@ export class AuthService {
         role: user.role,
         theme: user.theme,
         aiProviderMode: user.aiProviderMode,
+        certSuggestionCount: user.certSuggestionCount,
       },
       timestamp: new Date().toISOString(),
     };
@@ -227,9 +228,19 @@ export class AuthService {
   // per-user key storage exists — the UI already disables it, this is the guard.
   async updateSettings(
     userId: string,
-    patch: { name?: string; theme?: 'light' | 'dark' | 'system'; aiProviderMode?: 'cotailor' | 'own_keys' },
+    patch: {
+      name?: string;
+      theme?: 'light' | 'dark' | 'system';
+      aiProviderMode?: 'cotailor' | 'own_keys';
+      certSuggestionCount?: number;
+    },
   ) {
-    const data: { name?: string | null; theme?: 'light' | 'dark' | 'system'; aiProviderMode?: 'cotailor' } = {};
+    const data: {
+      name?: string | null;
+      theme?: 'light' | 'dark' | 'system';
+      aiProviderMode?: 'cotailor';
+      certSuggestionCount?: number;
+    } = {};
 
     if (patch.name !== undefined) {
       data.name = patch.name.trim() || null;
@@ -251,6 +262,16 @@ export class AuthService {
         throw new BadRequestException({ error: 'invalid_provider_mode', message: 'Unknown AI provider mode.' });
       }
       data.aiProviderMode = patch.aiProviderMode;
+    }
+    if (patch.certSuggestionCount !== undefined) {
+      const n = Math.trunc(Number(patch.certSuggestionCount));
+      if (!Number.isFinite(n) || n < 0 || n > 10) {
+        throw new BadRequestException({
+          error: 'invalid_cert_count',
+          message: 'Choose between 0 and 10 suggested certifications.',
+        });
+      }
+      data.certSuggestionCount = n;
     }
 
     if (Object.keys(data).length > 0) {
