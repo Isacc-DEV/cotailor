@@ -7,6 +7,7 @@ import { formatDateRange } from '@/app/lib/date-format';
 import { api } from '@/lib/api-client';
 import { resolveStyleConfig, styleClasses, styleVars } from '@/lib/resume-style';
 import { RESUME_SECTION_KEYS, type ResumeSectionKey, type StyleConfig } from '@cotailor/shared';
+import PagedPreview from './PagedPreview';
 import './page.css';
 import './style-tokens.css';
 
@@ -156,6 +157,10 @@ export default function ResumePreview() {
   const [fixAllProgress, setFixAllProgress] = useState<{ done: number; total: number } | null>(null);
   const [review, setReview] = useState<FixAllReview | null>(null);
   const [styleCfg, setStyleCfg] = useState<StyleConfig | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  // Bullet drag-reorder (within a single job): which bullet is being dragged,
+  // and where it would drop.
+  const [drag, setDrag] = useState<{ expIndex: number; from: number; over: number; after: boolean } | null>(null);
   const resumeDocRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(async () => {
@@ -219,8 +224,15 @@ export default function ResumePreview() {
     withBusy('edit', async () => {
       if (!editing || !resume) return;
       const next = clone();
-      const b = next.workExperience[editing.expIndex].bullets[editing.bulletIndex];
-      b.text = editing.value.trim();
+      const bullets = next.workExperience[editing.expIndex].bullets;
+      const text = editing.value.trim();
+      if (text === '') {
+        // There is no separate delete button — clearing a bullet's text and
+        // saving removes the bullet entirely.
+        bullets.splice(editing.bulletIndex, 1);
+      } else {
+        bullets[editing.bulletIndex].text = text;
+      }
       await save(next);
       setEditing(null);
       setReview(null); // a manual edit ends the batch-fix review
@@ -252,6 +264,58 @@ export default function ResumePreview() {
       await save(next);
       setReview(null); // splicing shifts bullet indexes — the review's targets are stale
     });
+
+  // Append a new empty bullet to a job and open it in the editor immediately.
+  // The bullet lives in local state only until Save persists it; cancelling an
+  // untouched new bullet removes it again (see cancelEdit).
+  const addBullet = (expIndex: number) => {
+    if (!resume || busy !== null) return;
+    const next = clone();
+    const bullets = next.workExperience[expIndex].bullets;
+    bullets.push({ text: '', provenance: 'user_confirmed', added: true });
+    setResume(next);
+    startEdit(expIndex, bullets.length - 1, '');
+  };
+
+  // Commit a within-job bullet move: pull the bullet out and reinsert it at the
+  // computed target slot, then persist. Reordering shifts indexes, so any
+  // pending batch-fix review is dropped.
+  const moveBullet = (expIndex: number, from: number, to: number) =>
+    withBusy('reorder', async () => {
+      if (!resume || from === to) return;
+      const next = clone();
+      const bullets = next.workExperience[expIndex].bullets;
+      if (from < 0 || from >= bullets.length || to < 0 || to >= bullets.length) return;
+      const [moved] = bullets.splice(from, 1);
+      bullets.splice(to, 0, moved);
+      await save(next);
+      setReview(null);
+    });
+
+  // Translate a drop (onto `over`, above or below its midpoint) into a target
+  // index, correcting for the gap left when the dragged bullet is removed.
+  const dropBullet = () => {
+    if (!drag) return;
+    const { expIndex, from, over, after } = drag;
+    let to = over + (after ? 1 : 0);
+    if (from < to) to -= 1;
+    setDrag(null);
+    if (to !== from) moveBullet(expIndex, from, to);
+  };
+
+  // Cancel the inline editor. A brand-new, never-saved bullet that was left
+  // empty is discarded so cancelling "add bullet" leaves no blank behind.
+  const cancelEdit = () => {
+    if (editing && resume) {
+      const b = resume.workExperience[editing.expIndex]?.bullets[editing.bulletIndex];
+      if (b?.added && !b.text) {
+        const next = clone();
+        next.workExperience[editing.expIndex].bullets.splice(editing.bulletIndex, 1);
+        setResume(next);
+      }
+    }
+    setEditing(null);
+  };
 
   const fixFormatting = () =>
     withBusy('formatting', async () => {
@@ -393,63 +457,6 @@ export default function ResumePreview() {
     URL.revokeObjectURL(url);
   };
 
-  const exportPdf = () =>
-    withBusy('export-pdf', async () => {
-      if (!resumeDocRef.current) return;
-
-      const html2pdfModule = await import('html2pdf.js');
-      const html2pdf = html2pdfModule.default ?? html2pdfModule;
-      const name = String(resume?.header?.name || 'Resume').trim().replace(/\s+/g, '-');
-      const cloneEl = resumeDocRef.current.cloneNode(true) as HTMLElement;
-      cloneEl.classList.add('pdf-export-doc');
-
-      cloneEl
-        .querySelectorAll('.bullet-actions, .bullet-tag, .bullet-before, .bullet-editor, .be-ai-hint, .badge')
-        .forEach((node) => node.remove());
-
-      const host = document.createElement('div');
-      host.className = 'pdf-export-host';
-      host.appendChild(cloneEl);
-      document.body.appendChild(host);
-
-      try {
-        await html2pdf()
-          .set({
-            filename: `${name || 'Resume'}-Resume.pdf`,
-            margin: [0.45, 0.55, 0.45, 0.55],
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: {
-              scale: 2,
-              useCORS: true,
-              backgroundColor: '#ffffff',
-              scrollX: 0,
-              scrollY: 0,
-            },
-            jsPDF: {
-              unit: 'in',
-              format: 'letter',
-              orientation: 'portrait',
-              compress: true,
-            },
-            pagebreak: {
-              mode: ['css', 'legacy'],
-              avoid: [
-                '.resume-doc-header',
-                '.resume-section-title',
-                '.resume-exp-head',
-                '.resume-exp-pos',
-                '.resume-bullets li',
-                '.resume-certs li',
-              ],
-            },
-          })
-          .from(cloneEl)
-          .save();
-      } finally {
-        host.remove();
-      }
-    });
-
   if (!sessionId) return null;
   if (error && !resume) {
     return (
@@ -568,7 +575,40 @@ export default function ResumePreview() {
                   const tailored = b.provenance === 'user_confirmed';
                   const aiFix = review?.changes.find((c) => c.expIndex === ei && c.bulletIndex === bi);
                   return (
-                    <li key={bi} className={`${tailored ? 'bullet-tailored' : ''} ${aiFix ? 'bullet-ai-fixed' : ''}`.trim()}>
+                    <li
+                      key={bi}
+                      className={[
+                        tailored ? 'bullet-tailored' : '',
+                        aiFix ? 'bullet-ai-fixed' : '',
+                        drag && drag.expIndex === ei && drag.from === bi ? 'bullet-dragging' : '',
+                        drag && drag.expIndex === ei && drag.over === bi && drag.from !== bi
+                          ? drag.after
+                            ? 'drop-after'
+                            : 'drop-before'
+                          : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      draggable={!isEditing && busy === null}
+                      onDragStart={(e) => {
+                        setDrag({ expIndex: ei, from: bi, over: bi, after: false });
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', String(bi)); // Firefox needs payload
+                      }}
+                      onDragOver={(e) => {
+                        if (!drag || drag.expIndex !== ei) return; // same job only
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const after = e.clientY > rect.top + rect.height / 2;
+                        if (drag.over !== bi || drag.after !== after) setDrag({ ...drag, over: bi, after });
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        dropBullet();
+                      }}
+                      onDragEnd={() => setDrag(null)}
+                    >
                       {isEditing ? (
                         <div className="bullet-editor">
                           {editing.fromAI && (
@@ -588,7 +628,7 @@ export default function ResumePreview() {
                             <button className="be-save" onClick={commitEdit} disabled={busy === 'edit'}>
                               {busy === 'edit' ? 'Saving…' : 'Save'}
                             </button>
-                            <button className="be-cancel" onClick={() => setEditing(null)} disabled={busy === 'edit'}>
+                            <button className="be-cancel" onClick={cancelEdit} disabled={busy === 'edit'}>
                               Cancel
                             </button>
                           </div>
@@ -641,6 +681,16 @@ export default function ResumePreview() {
                   );
                 })}
               </ul>
+              <button
+                className="add-bullet-btn"
+                onClick={() => addBullet(ei)}
+                disabled={busy !== null}
+                title="Add a bullet"
+                aria-label="Add a bullet"
+              >
+                <span className="ab-plus">+</span>
+                <span className="ab-line" />
+              </button>
             </div>
           ))}
         </section>
@@ -698,8 +748,8 @@ export default function ResumePreview() {
           <Button variant="secondary" className="resume-toolbar-btn" onClick={downloadJson}>
             Download JSON
           </Button>
-          <Button variant="primary" className="resume-toolbar-btn primary" onClick={exportPdf} disabled={busy !== null}>
-            {busy === 'export-pdf' ? 'Exporting...' : 'Export PDF'}
+          <Button variant="primary" className="resume-toolbar-btn primary" onClick={() => setShowPreview(true)}>
+            Preview / Export
           </Button>
         </div>
       </div>
@@ -839,6 +889,10 @@ export default function ResumePreview() {
             </Button>
           </span>
         </div>
+      )}
+
+      {showPreview && (
+        <PagedPreview resume={resume} styleCfg={styleCfg} onClose={() => setShowPreview(false)} />
       )}
     </div>
   );

@@ -1,0 +1,153 @@
+/* --- In-app paged (paper-ready) preview overlay --- */
+.pp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 18, 24, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.pp-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: #1c2230;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.pp-bar-title { font-size: 0.95rem; font-weight: 600; }
+.pp-bar-count { margin-left: 0.6rem; font-size: 0.8rem; opacity: 0.7; font-weight: 400; }
+.pp-bar-actions { display: flex; gap: 0.5rem; }
+
+/* Scroll area holding the stack of pages */
+.pp-scroll {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 1.5rem 1rem 2.5rem;
+  display: flex;
+  justify-content: center;
+}
+.pp-stack-outer { position: relative; }
+.pp-stack {
+  transform-origin: top left;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+/* A single letter-sized sheet */
+.pp-page {
+  background: #ffffff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
+}
+.pp-page-num {
+  position: absolute;
+  right: 0.22in;
+  bottom: 0.14in;
+  font-size: 9px;
+  color: #b0b0b0;
+  font-family: system-ui, sans-serif;
+}
+
+/* Off-screen container used only to measure block heights */
+.pp-measure {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* The document context inside each sheet (and the measurer). Paper-ready:
+   card chrome removed, black text on white — mirrors the export look. */
+.pp-doc {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: #000 !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+}
+.pp-doc,
+.pp-doc * {
+  color: #000 !important;
+  background: transparent !important;
+}
+.pp-doc .resume-doc-header { border-bottom: 2px solid #000 !important; }
+.pp-doc .resume-section-title { border-bottom: 1px solid #888 !important; }
+
+/* Each atomic block. flow-root so the block's box height includes the inner
+   element's margins — that is what keeps measured height == rendered height. */
+.pp-block { display: flow-root; }
+/* Visual separation between experience entries (padding is measured). */
+.pp-block.pp-exp-gap { padding-top: 0.28rem; }
+
+/* Print / Save-as-PDF from inside the preview: output the exact sheets the
+   user sees — one .pp-page per physical page — so the PDF matches the preview
+   1:1. Scoped to body.pp-open, so a plain Ctrl+P with the preview closed still
+   falls back to printing the live document (rules in page.css). */
+@media print {
+  body.pp-open .resume-toolbar,
+  body.pp-open .resume-side,
+  body.pp-open .resume-main,
+  body.pp-open .fixall-review-bar,
+  body.pp-open .error-message,
+  body.pp-open .pp-bar,
+  body.pp-open .pp-page-num,
+  body.pp-open .pp-measure { display: none !important; }
+
+  body.pp-open .pp-overlay {
+    position: static !important;
+    display: block !important;
+    background: none !important;
+    backdrop-filter: none !important;
+  }
+  body.pp-open .pp-scroll {
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  body.pp-open .pp-stack-outer {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+  }
+  body.pp-open .pp-stack {
+    display: block !important;
+    transform: none !important;
+    gap: 0 !important;
+  }
+  /* Each sheet is one printed page. Its 0.6in inner padding drops to 0 because
+     the 0.6in paper margin now comes from @page (defined in page.css). Width
+     stays at the 7.3in content box so line wrapping is identical to the preview;
+     height is auto + break-after so a sheet never spills a blank extra page. */
+  body.pp-open .pp-page {
+    width: 7.3in !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-after: page;
+    page-break-after: always;
+  }
+  body.pp-open .pp-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}

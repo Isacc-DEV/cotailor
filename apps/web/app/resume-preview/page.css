@@ -696,6 +696,49 @@
 .be-cancel { background: var(--bg-primary); border-color: var(--border-light); color: var(--text-secondary); }
 .be-save:disabled, .be-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Subtle "add a bullet" affordance at the end of each job (edit chrome only). */
+.add-bullet-btn {
+  display: flex; align-items: center; gap: 0.4rem;
+  width: 100%; margin: 0.15rem 0 0; padding: 0.1rem 0;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-secondary); opacity: 0.5;
+  transition: opacity 0.12s ease, color 0.12s ease;
+}
+.add-bullet-btn:hover:not(:disabled) { opacity: 1; color: var(--accent); }
+.add-bullet-btn:disabled { cursor: not-allowed; opacity: 0.3; }
+.ab-plus {
+  flex: 0 0 auto; width: 1.05rem; height: 1.05rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid currentColor; border-radius: 50%;
+  font-size: 0.85rem; line-height: 1;
+}
+.ab-line { flex: 1 1 auto; height: 1px; background: currentColor; opacity: 0.4; }
+
+/* Bullet drag-to-reorder (within a single job) */
+.resume-bullets li[draggable='true'] { cursor: grab; }
+.resume-bullets li.bullet-dragging { opacity: 0.4; cursor: grabbing; }
+.resume-bullets li.drop-before { box-shadow: inset 0 2px 0 0 var(--accent); }
+.resume-bullets li.drop-after { box-shadow: inset 0 -2px 0 0 var(--accent); }
+
+/* Editable view only: swap the bullet dot for a grip handle so each bullet
+   reads as movable. The paged preview (.pp-doc) and print keep real dots. */
+.resume-doc:not(.pp-doc) .resume-bullets { list-style: none; }
+.resume-doc:not(.pp-doc) .resume-bullets > li::before {
+  content: '⠿';
+  position: absolute;
+  left: -1.1rem;
+  top: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  opacity: 0.4;
+  transition: opacity 0.12s ease, color 0.12s ease;
+}
+.resume-doc:not(.pp-doc) .resume-bullets > li:hover::before { opacity: 0.85; color: var(--accent); }
+.resume-doc:not(.pp-doc) .resume-bullets > li.bullet-dragging::before { cursor: grabbing; }
+/* No handle while the bullet is in the inline editor. */
+.resume-doc:not(.pp-doc) .resume-bullets > li:has(.bullet-editor)::before { content: none; }
+
 /* --- Two-column layout: resume left, review panels in right sidebar --- */
 .resume-layout { display: flex; gap: 1.25rem; align-items: flex-start; }
 .resume-main { flex: 1; min-width: 0; order: 1; }
@@ -741,8 +784,11 @@
   .resume-section-title { color: #000 !important; border-bottom: 1px solid #888 !important; }
 
   /* Review chrome never prints */
-  .bullet-actions, .bullet-tag, .bullet-before, .bullet-editor, .be-ai-hint, .badge { display: none !important; }
+  .bullet-actions, .bullet-tag, .bullet-before, .bullet-editor, .be-ai-hint, .badge, .add-bullet-btn { display: none !important; }
   .bullet-tailored { background: transparent !important; border-radius: 0 !important; }
+  /* On paper, bullets are dots again — never the edit-mode drag handle. */
+  .resume-doc:not(.pp-doc) .resume-bullets { list-style: disc !important; }
+  .resume-doc:not(.pp-doc) .resume-bullets > li::before { content: none !important; }
 
   /* Sensible page breaks */
   .resume-exp { page-break-inside: avoid; break-inside: avoid; }
