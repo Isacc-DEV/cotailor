@@ -1,11 +1,12 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import type { JdAnalysis, SkillExtraction } from '@cotailor/shared';
+import type { JdAnalysis, SkillExtraction, CertSelectionResult } from '@cotailor/shared';
 import {
   classifySkill,
   findRelevantBullet,
   isSpecificSkill,
   jdAnalysisSchema,
   skillExtractionSchema,
+  profileHoldsCert,
 } from '@cotailor/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { LLM_PROVIDER, type LLMProvider } from '../llm/llm-provider.interface';
@@ -13,6 +14,7 @@ import { GatesService } from '../core/gates.service';
 import { CardsService } from '../core/cards.service';
 import { SessionTransitionService } from '../core/session-transition.service';
 import { EventsService } from '../core/events.service';
+import { CertificationsService } from '../certifications/certifications.service';
 
 interface RunOpts {
   trustCategory?: boolean;
@@ -33,6 +35,7 @@ export class AnalysisService {
     private readonly cards: CardsService,
     private readonly transitions: SessionTransitionService,
     private readonly events: EventsService,
+    private readonly certs: CertificationsService,
   ) {}
 
   // LLM JSON is untrusted: despite the prompt contract, models occasionally
@@ -206,7 +209,7 @@ export class AnalysisService {
   async evaluatePostSubtype(sessionId: string): Promise<void> {
     const session = await this.prisma.tailoringSession.findUniqueOrThrow({
       where: { id: sessionId },
-      include: { profile: true },
+      include: { profile: true, user: true, jdDocument: true },
     });
     const analysisRow = await this.prisma.jdAnalysis.findFirst({
       where: { sessionId },
@@ -218,6 +221,16 @@ export class AnalysisService {
 
     // ---- Skill gap cards (design Section 9) ----
     await this.createSkillCards(sessionId, session.profile, extraction);
+
+    // ---- Certification suggestions (catalog + AI pick; top-N is a user setting) ----
+    await this.createCertificationCards(
+      sessionId,
+      session.profile,
+      analysisRow.category,
+      analysisRow.subtype,
+      session.jdDocument?.text ?? '',
+      session.user?.certSuggestionCount ?? 3,
+    );
 
     this.events.emit(sessionId, 'cards_ready', { state: 'WAITING_SKILL_DECISIONS' });
   }
@@ -360,28 +373,78 @@ export class AnalysisService {
       });
     }
 
-    // Required certifications not present on the profile.
-    const profileCerts: string[] = Array.isArray(base.certifications)
-      ? base.certifications.map((c: any) => String(c?.name ?? '').toLowerCase())
+  }
+
+  // Certification suggestions (catalog + AI pick). We hand the AI the manager's
+  // certs for this category/subtype and it returns the top-N that fit the job.
+  // Certs the user already holds are on the resume via the profile snapshot; each
+  // remaining pick becomes a small "add / studying / omit" card the user decides.
+  private async createCertificationCards(
+    sessionId: string,
+    profile: { baseResume: unknown },
+    category: string,
+    subtype: string,
+    jdText: string,
+    topN: number,
+  ): Promise<void> {
+    if (topN <= 0) return;
+    const candidates = await this.certs.candidatesForJob(category, subtype);
+    if (!candidates.length) return;
+
+    const base =
+      profile.baseResume && typeof profile.baseResume === 'object' ? (profile.baseResume as any) : {};
+    const profileCerts: Array<{ name?: string; catalogId?: string | null }> = Array.isArray(
+      base.certifications,
+    )
+      ? base.certifications
       : [];
-    for (const cert of extraction.certifications ?? []) {
-      if (budget <= 0) break;
-      const have = profileCerts.some((p) => p.includes(cert.toLowerCase()) || cert.toLowerCase().includes(p));
-      if (have) continue;
-      await this.cards.create(sessionId, 'certification_risk', 'blocking', {
+
+    let selection: CertSelectionResult;
+    try {
+      selection = await this.llm.selectCertifications({
+        jdText,
+        subtype,
+        candidates: candidates.map((c) => ({
+          id: c.id,
+          name: c.name,
+          issuer: c.issuer,
+          aliases: c.aliases,
+        })),
+        topN,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Session ${sessionId}: cert selection failed (${err instanceof Error ? err.message : String(err)}); skipping cert suggestions.`,
+      );
+      return;
+    }
+
+    const byId = new Map(candidates.map((c) => [c.id, c]));
+    const alreadyHeld: string[] = [];
+    for (const pick of selection.selected.slice(0, topN)) {
+      const cert = byId.get(pick.catalogId);
+      if (!cert) continue;
+      // Held certs are already in the profile snapshot → already on the resume.
+      if (profileHoldsCert(cert, profileCerts)) {
+        alreadyHeld.push(cert.name);
+        continue;
+      }
+      await this.cards.create(sessionId, 'certification_risk', 'warning', {
         card_type: 'certification_risk',
-        title: `The job requires the ${cert} certification.`,
-        message: `This certification isn't on your profile.`,
+        title: `${cert.name} is a strong fit for this job.`,
+        message: `Issued by ${cert.issuer}. It isn't on your profile — how should we handle it?`,
         options: [
-          { option_id: 'studying', label: "Say I'm studying for it", consequence: 'Shown as in progress.' },
+          { option_id: 'have_it', label: 'I have it — add it', consequence: 'Added to your Certifications.' },
+          { option_id: 'studying', label: "I'm studying for it", consequence: 'Shown as in progress.' },
           { option_id: 'omit', label: 'Leave it out', consequence: 'Not mentioned.' },
-          { option_id: 'cancel', label: 'Cancel', consequence: 'Ends this session.' },
         ],
         recommended_option: 'omit',
-        severity: 'blocking',
-        context: { certification: cert },
+        severity: 'warning',
+        context: { certification: cert.name, catalogId: cert.id, issuer: cert.issuer },
       });
-      budget--;
+    }
+    if (alreadyHeld.length) {
+      this.events.emit(sessionId, 'assumed_defaults', { held_certifications: alreadyHeld });
     }
   }
 }

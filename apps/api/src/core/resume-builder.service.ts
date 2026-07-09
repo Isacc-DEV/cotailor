@@ -215,9 +215,16 @@ export class ResumeBuilderService {
 
       if (card.cardType === 'certification_risk') {
         const cert: string = ctx.certification;
-        if (option === 'studying') {
-          certifications.push({ name: cert, status: 'in progress' });
+        const catalogId: string | undefined = ctx.catalogId;
+        const already = certifications.some(
+          (c: any) => String(c?.name ?? '').toLowerCase() === cert.toLowerCase(),
+        );
+        if (!already && option === 'studying') {
+          certifications.push({ name: cert, status: 'in progress', catalogId });
           changeLog.push({ skill: cert, action: 'studying', where: 'Certifications' });
+        } else if (!already && option === 'have_it') {
+          certifications.push({ name: cert, catalogId });
+          changeLog.push({ skill: cert, action: 'added', where: 'Certifications' });
         }
         continue;
       }

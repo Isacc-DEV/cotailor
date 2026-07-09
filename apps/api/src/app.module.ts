@@ -11,6 +11,8 @@ import { ProfileImportModule } from './profile-import/profile-import.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { ResumeStylesModule } from './resume-styles/resume-styles.module';
+import { CertificationsModule } from './certifications/certifications.module';
+import { TaxonomyModule } from './taxonomy/taxonomy.module';
 import { JwtAuthGuard } from './auth/auth.guard';
 import { HealthController } from './health.controller';
 
@@ -27,6 +29,8 @@ import { HealthController } from './health.controller';
     AuthModule,
     AdminModule,
     ResumeStylesModule,
+    CertificationsModule,
+    TaxonomyModule,
   ],
   controllers: [HealthController],
   // Every route requires a bearer token unless marked @Public().

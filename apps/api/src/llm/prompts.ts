@@ -223,3 +223,40 @@ ${expLines}
 
 Respond ONLY with JSON: {"text": string}`;
 }
+
+// Certification selection. The model picks the best-fitting certs for a job from
+// the manager's candidate list — it may ONLY return ids from the list, so it can
+// never invent a certification the manager didn't approve.
+export function buildSelectCertsPrompt(input: {
+  jdText: string;
+  subtype?: string;
+  candidates: Array<{ id: string; name: string; issuer: string; aliases: string[] }>;
+  topN: number;
+}): string {
+  const list = input.candidates
+    .map(
+      (c) =>
+        `- id: ${c.id} | ${c.name} (${c.issuer})${c.aliases.length ? ` [aka ${c.aliases.join(', ')}]` : ''}`,
+    )
+    .join('\n');
+  return `You are selecting the certifications most relevant to a job${
+    input.subtype ? ` (role: ${input.subtype})` : ''
+  }.
+
+Pick AT MOST ${input.topN} certifications from the CANDIDATE LIST that genuinely fit
+the work described below. Fewer is fine. A job rarely names a certification — infer
+relevance from the skills, tools, and responsibilities in the posting.
+
+RULES:
+- You may ONLY choose ids from the CANDIDATE LIST. NEVER invent a certification or
+  return an id that is not listed.
+- Order best-fit first; return at most ${input.topN} items.
+
+Return ONLY JSON of shape: {"selected": [{"catalogId": string, "reason": string}]}
+
+CANDIDATE LIST:
+${list}
+
+JOB DESCRIPTION:
+"""${input.jdText.slice(0, 12000)}"""`;
+}

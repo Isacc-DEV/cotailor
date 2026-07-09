@@ -30,7 +30,12 @@ export class AuthController {
   async updateMe(
     @CurrentUser() user: AuthUser,
     @Body()
-    body: { name?: string; theme?: 'light' | 'dark' | 'system'; aiProviderMode?: 'cotailor' | 'own_keys' },
+    body: {
+      name?: string;
+      theme?: 'light' | 'dark' | 'system';
+      aiProviderMode?: 'cotailor' | 'own_keys';
+      certSuggestionCount?: number;
+    },
   ) {
     return this.authService.updateSettings(user.userId, body);
   }
