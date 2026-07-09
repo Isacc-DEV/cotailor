@@ -10,6 +10,7 @@ import { normalizeSkills } from '@/app/lib/normalize-skills';
 import WorkExperienceSection from '@/app/components/profile/WorkExperienceSection';
 import EducationSection from '@/app/components/profile/EducationSection';
 import CertificationsSection from '@/app/components/profile/CertificationsSection';
+import BulletsEditor from '@/app/components/profile/BulletsEditor';
 import { useResumeStyleOptions } from '@/app/hooks/useResumeStyleOptions';
 import { useTaxonomy } from '@/app/hooks/useTaxonomy';
 import './page.css';
@@ -445,16 +446,17 @@ export default function CreateProfile() {
         <section className="form-section">
           <h2 className="section-title">Skills</h2>
           <div className="form-group">
-            <label htmlFor="skills">Skills (comma-separated)</label>
-            <p className="field-help">Technical skills and tools you are proficient in</p>
-            <textarea
-              id="skills"
-              name="skills"
-              value={formData.skills.join(', ')}
-              onChange={handleInputChange}
-              placeholder="e.g., Node.js, PostgreSQL, React, AWS, Docker, TypeScript"
+            <label>Skills</label>
+            <p className="field-help">
+              Technical skills and tools you are proficient in. Paste a comma-separated list to add several at once.
+            </p>
+            <BulletsEditor
+              bullets={formData.skills}
+              onChange={(skills) => setFormData((prev) => ({ ...prev, skills }))}
               disabled={submitting}
-              rows={4}
+              addLabel="Add a skill"
+              splitOnComma
+              columns={4}
             />
           </div>
         </section>

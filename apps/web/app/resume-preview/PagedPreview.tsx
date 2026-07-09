@@ -150,7 +150,7 @@ function buildBlocks(resume: PreviewResume, styleCfg: StyleConfig | null): Block
         blocks.push({
           key: `edu-${i}`,
           node: (
-            <ul className="resume-certs">
+            <ul className="resume-edu">
               <li>{educationText(ed)}</li>
             </ul>
           ),

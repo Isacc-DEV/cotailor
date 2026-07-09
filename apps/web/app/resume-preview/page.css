@@ -525,6 +525,9 @@
 .bullet-tag { margin-left: 0.5rem; font-size: 0.65rem; vertical-align: middle; }
 .resume-certs { margin: 0; padding-left: 1.2rem; }
 .resume-certs li { font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 0.2rem; }
+/* Education: same as certs but no bullet dots. */
+.resume-edu { margin: 0; padding-left: 0; list-style: none; }
+.resume-edu li { font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 0.2rem; }
 
 .pdf-export-host {
   position: fixed;

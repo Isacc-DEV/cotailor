@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, ConfirmDialog } from '@/app/components/ui';
 import { useConfirmDialog } from '@/app/hooks/useConfirmDialog';
 import { PROFILE_DEGREES } from '@cotailor/shared';
+import BulletsEditor from './BulletsEditor';
 import './EducationSection.css';
 
 interface EducationItem {
@@ -36,7 +37,6 @@ export default function EducationSection({
 }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingData, setEditingData] = useState<EducationItem | null>(null);
-  const [newCourse, setNewCourse] = useState('');
 
   // Local undo stack for in-form edits (coursework). Keeps last 1-2 states.
   const [editingUndo, setEditingUndo] = useState<EducationItem[]>([]);
@@ -135,7 +135,6 @@ export default function EducationSection({
     onChange(updated);
     setEditingId(null);
     setEditingData(null);
-    setNewCourse('');
     setEditingUndo([]);
   };
 
@@ -156,43 +155,7 @@ export default function EducationSection({
   const handleCancel = () => {
     setEditingId(null);
     setEditingData(null);
-    setNewCourse('');
     setEditingUndo([]);
-  };
-
-  const handleAddCourse = () => {
-    if (!newCourse.trim() || !editingData) return;
-    pushEditingUndo();
-    const courses = editingData.relevantCoursework || [];
-    setEditingData({
-      ...editingData,
-      relevantCoursework: [...courses, newCourse],
-    });
-    setNewCourse('');
-  };
-
-  const handleRemoveCourse = (courseId: number) => {
-    if (!editingData) return;
-    const courseText = (editingData.relevantCoursework || [])[courseId] || '';
-    requestConfirm(
-      {
-        title: 'Delete this course?',
-        itemName: courseText,
-      },
-      () => {
-        pushEditingUndo();
-        setEditingData((prev) =>
-          prev
-            ? {
-                ...prev,
-                relevantCoursework: (prev.relevantCoursework || []).filter(
-                  (_, i) => i !== courseId,
-                ),
-              }
-            : prev,
-        );
-      },
-    );
   };
 
   const confirmDialog = (
@@ -327,41 +290,16 @@ export default function EducationSection({
 
           <div className="form-group">
             <label>Relevant Coursework</label>
-            <div className="courses-list">
-              {(editingData.relevantCoursework || []).map((course, idx) => (
-                <div key={idx} className="course-item">
-                  <span>{course}</span>
-                  <button
-                    type="button"
-                    className="btn-remove"
-                    onClick={() => handleRemoveCourse(idx)}
-                    aria-label="Remove course"
-                    disabled={disabled}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="add-course">
-              <input
-                type="text"
-                value={newCourse}
-                onChange={(e) => setNewCourse(e.target.value)}
-                placeholder="Add a course (e.g., Data Structures)..."
-                onKeyPress={(e) => e.key === 'Enter' && handleAddCourse()}
-                disabled={disabled}
-              />
-              <button
-                type="button"
-                className="btn-add"
-                onClick={handleAddCourse}
-                disabled={disabled}
-              >
-                + Add
-              </button>
-            </div>
+            <BulletsEditor
+              bullets={editingData.relevantCoursework || []}
+              onChange={(relevantCoursework) => {
+                pushEditingUndo();
+                setEditingData((prev) => (prev ? { ...prev, relevantCoursework } : prev));
+              }}
+              disabled={disabled}
+              addLabel="Add coursework"
+              splitOnComma
+            />
           </div>
 
           <div className="form-actions">

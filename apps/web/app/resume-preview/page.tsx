@@ -103,6 +103,22 @@ function fixInstruction(issue: QualityIssue): string {
 
 const firstWordOf = (t: string) => (t.trim().split(/\s+/)[0] || '').toLowerCase().replace(/[^a-z]/g, '');
 
+// Render one education/certification entry as the single line the user sees and
+// edits. Entries may be plain strings (user-edited) or the structured objects
+// the generator produces.
+function eduText(ed: any): string {
+  if (typeof ed === 'string') return ed;
+  if (!ed) return '';
+  const head = [[ed.degree, ed.field].filter(Boolean).join(' in '), ed.institution].filter(Boolean).join(' — ');
+  const when = ed.startDate || ed.graduationYear ? ` (${formatDateRange(ed.startDate, ed.graduationYear)})` : '';
+  return head + when;
+}
+function certText(c: any): string {
+  if (typeof c === 'string') return c;
+  if (!c) return '';
+  return `${c.name || ''}${c.status ? ` (${c.status})` : ''}${c.issuer ? ` — ${c.issuer}` : ''}`;
+}
+
 // Openers of every bullet except the target — forbidden for a rewrite so it
 // can't create a new repeated-opener issue.
 function otherOpeners(r: Resume, expIndex: number, bulletIndex: number): string[] {
@@ -153,6 +169,9 @@ export default function ResumePreview() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [editingSummary, setEditingSummary] = useState<{ value: string } | null>(null);
+  // Inline single-line editors for education / certification entries.
+  const [editingEdu, setEditingEdu] = useState<{ index: number; value: string; added?: boolean } | null>(null);
+  const [editingCert, setEditingCert] = useState<{ index: number; value: string; added?: boolean } | null>(null);
   const [busy, setBusy] = useState<string | null>(null); // which action is running
   const [fixAllProgress, setFixAllProgress] = useState<{ done: number; total: number } | null>(null);
   const [review, setReview] = useState<FixAllReview | null>(null);
@@ -315,6 +334,70 @@ export default function ResumePreview() {
       }
     }
     setEditing(null);
+  };
+
+  // --- Education entries (stored as plain strings once user-edited) ---
+  const startEditEdu = (index: number) => {
+    if (!resume) return;
+    setEditingEdu({ index, value: eduText(resume.education[index]) });
+  };
+  const addEdu = () => {
+    if (!resume || busy !== null) return;
+    const next = clone();
+    if (!Array.isArray(next.education)) next.education = [];
+    next.education.push('');
+    setResume(next);
+    setEditingEdu({ index: next.education.length - 1, value: '', added: true });
+  };
+  const commitEdu = () =>
+    withBusy('edu', async () => {
+      if (!editingEdu || !resume) return;
+      const next = clone();
+      const text = editingEdu.value.trim();
+      if (text === '') next.education.splice(editingEdu.index, 1); // cleared → delete
+      else next.education[editingEdu.index] = text;
+      await save(next);
+      setEditingEdu(null);
+    });
+  const cancelEdu = () => {
+    if (editingEdu?.added && resume) {
+      const next = clone();
+      next.education.splice(editingEdu.index, 1); // discard the never-saved new entry
+      setResume(next);
+    }
+    setEditingEdu(null);
+  };
+
+  // --- Certification entries (stored as { name } once user-edited) ---
+  const startEditCert = (index: number) => {
+    if (!resume) return;
+    setEditingCert({ index, value: certText(resume.certifications[index]) });
+  };
+  const addCert = () => {
+    if (!resume || busy !== null) return;
+    const next = clone();
+    if (!Array.isArray(next.certifications)) next.certifications = [];
+    next.certifications.push({ name: '' });
+    setResume(next);
+    setEditingCert({ index: next.certifications.length - 1, value: '', added: true });
+  };
+  const commitCert = () =>
+    withBusy('cert', async () => {
+      if (!editingCert || !resume) return;
+      const next = clone();
+      const text = editingCert.value.trim();
+      if (text === '') next.certifications.splice(editingCert.index, 1); // cleared → delete
+      else next.certifications[editingCert.index] = { name: text };
+      await save(next);
+      setEditingCert(null);
+    });
+  const cancelCert = () => {
+    if (editingCert?.added && resume) {
+      const next = clone();
+      next.certifications.splice(editingCert.index, 1); // discard the never-saved new entry
+      setResume(next);
+    }
+    setEditingCert(null);
   };
 
   const fixFormatting = () =>
@@ -498,6 +581,53 @@ export default function ResumePreview() {
         .filter(Boolean)
         .join(' · ') || 'No fixes could be applied automatically'
     : '';
+
+  // One inline-editable list row (shared by Education & Certifications): shows
+  // the text with an edit pencil, or the textarea editor when active. Clearing
+  // the text and saving deletes the row (handled by the commit fns).
+  const renderEntryLi = (
+    index: number,
+    text: string,
+    isEditing: boolean,
+    value: string,
+    setValue: (v: string) => void,
+    onSave: () => void,
+    onCancel: () => void,
+    onEdit: () => void,
+    busyKey: string,
+  ) => (
+    <li key={index}>
+      {isEditing ? (
+        <div className="bullet-editor">
+          <textarea value={value} onChange={(ev) => setValue(ev.target.value)} rows={2} autoFocus />
+          <div className="be-actions">
+            <button className="be-save" onClick={onSave} disabled={busy === busyKey}>
+              {busy === busyKey ? 'Saving…' : 'Save'}
+            </button>
+            <button className="be-cancel" onClick={onCancel} disabled={busy === busyKey}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <span className="bullet-text">{text}</span>
+          <span className="bullet-actions">
+            <button className="ba-btn" title="Edit" onClick={onEdit} disabled={busy !== null}>
+              ✎
+            </button>
+          </span>
+        </>
+      )}
+    </li>
+  );
+
+  const addEntryBtn = (onClick: () => void, label: string) => (
+    <button className="add-bullet-btn" onClick={onClick} disabled={busy !== null} title={label} aria-label={label}>
+      <span className="ab-plus">+</span>
+      <span className="ab-line" />
+    </button>
+  );
 
   // The document's sections, keyed so the style's sectionOrder can arrange
   // them. Real DOM order (not CSS order) so print pagination and the text
@@ -695,41 +825,48 @@ export default function ResumePreview() {
           ))}
         </section>
       ) : null,
-    education:
-      resume.education?.length > 0 ? (
-        <section>
-          <h3 className="resume-section-title">Education</h3>
-          <ul className="resume-certs">
-            {resume.education.map((ed: any, i: number) => (
-              <li key={i}>
-                {typeof ed === 'string'
-                  ? ed
-                  : [[ed.degree, ed.field].filter(Boolean).join(' in '), ed.institution]
-                      .filter(Boolean)
-                      .join(' — ') +
-                    (ed.startDate || ed.graduationYear
-                      ? ` (${formatDateRange(ed.startDate, ed.graduationYear)})`
-                      : '')}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null,
-    certifications:
-      resume.certifications?.length > 0 ? (
-        <section>
-          <h3 className="resume-section-title">Certifications</h3>
-          <ul className="resume-certs">
-            {resume.certifications.map((c: any, i: number) => (
-              <li key={i}>
-                {c.name}
-                {c.status ? ` (${c.status})` : ''}
-                {c.issuer ? ` — ${c.issuer}` : ''}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null,
+    education: (
+      <section>
+        <h3 className="resume-section-title">Education</h3>
+        <ul className="resume-edu">
+          {(resume.education ?? []).map((ed: any, i: number) =>
+            renderEntryLi(
+              i,
+              eduText(ed),
+              editingEdu?.index === i,
+              editingEdu?.value ?? '',
+              (v) => setEditingEdu((s) => (s ? { ...s, value: v } : s)),
+              commitEdu,
+              cancelEdu,
+              () => startEditEdu(i),
+              'edu',
+            ),
+          )}
+        </ul>
+        {addEntryBtn(addEdu, 'Add education')}
+      </section>
+    ),
+    certifications: (
+      <section>
+        <h3 className="resume-section-title">Certifications</h3>
+        <ul className="resume-certs">
+          {(resume.certifications ?? []).map((c: any, i: number) =>
+            renderEntryLi(
+              i,
+              certText(c),
+              editingCert?.index === i,
+              editingCert?.value ?? '',
+              (v) => setEditingCert((s) => (s ? { ...s, value: v } : s)),
+              commitCert,
+              cancelCert,
+              () => startEditCert(i),
+              'cert',
+            ),
+          )}
+        </ul>
+        {addEntryBtn(addCert, 'Add certification')}
+      </section>
+    ),
   };
   const sectionOrder: ResumeSectionKey[] = styleCfg?.sectionOrder ?? [...RESUME_SECTION_KEYS];
 

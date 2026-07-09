@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, ConfirmDialog } from '@/app/components/ui';
 import { useConfirmDialog } from '@/app/hooks/useConfirmDialog';
 import { formatDateRange } from '@/app/lib/date-format';
+import BulletsEditor from './BulletsEditor';
 import './WorkExperienceSection.css';
 
 interface WorkExperienceItem {
@@ -34,7 +35,6 @@ export default function WorkExperienceSection({
 }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingData, setEditingData] = useState<WorkExperienceItem | null>(null);
-  const [newBullet, setNewBullet] = useState('');
 
   // Local undo stack for in-form edits (bullets/tech). Keeps last 1-2 states.
   const [editingUndo, setEditingUndo] = useState<WorkExperienceItem[]>([]);
@@ -134,7 +134,6 @@ export default function WorkExperienceSection({
     onChange(updated);
     setEditingId(null);
     setEditingData(null);
-    setNewBullet('');
     setEditingUndo([]);
   };
 
@@ -155,35 +154,7 @@ export default function WorkExperienceSection({
   const handleCancel = () => {
     setEditingId(null);
     setEditingData(null);
-    setNewBullet('');
     setEditingUndo([]);
-  };
-
-  const handleAddBullet = () => {
-    if (!newBullet.trim() || !editingData) return;
-    pushEditingUndo();
-    const bullets = editingData.bullets || [];
-    setEditingData({ ...editingData, bullets: [...bullets, newBullet] });
-    setNewBullet('');
-  };
-
-  const handleRemoveBullet = (bulletId: number) => {
-    if (!editingData) return;
-    const bulletText = (editingData.bullets || [])[bulletId] || '';
-    requestConfirm(
-      {
-        title: 'Delete this bullet?',
-        itemName: bulletText,
-      },
-      () => {
-        pushEditingUndo();
-        setEditingData((prev) =>
-          prev
-            ? { ...prev, bullets: (prev.bullets || []).filter((_, i) => i !== bulletId) }
-            : prev,
-        );
-      },
-    );
   };
 
   const handleAddTech = (tech: string) => {
@@ -323,54 +294,17 @@ export default function WorkExperienceSection({
 
           <div className="form-group">
             <label>Responsibilities</label>
-            <div className="bullets-list">
-              {(editingData.bullets || []).map((bullet, idx) => (
-                <div key={idx} className="bullet-item">
-                  <input
-                    type="text"
-                    value={bullet}
-                    onFocus={pushEditingUndo}
-                    onChange={(e) => {
-                      const newBullets = [...(editingData.bullets || [])];
-                      newBullets[idx] = e.target.value;
-                      setEditingData({ ...editingData, bullets: newBullets });
-                    }}
-                    className="bullet-input"
-                    placeholder="Edit responsibility..."
-                    disabled={disabled}
-                  />
-                  <button
-                    type="button"
-                    className="btn-remove"
-                    onClick={() => handleRemoveBullet(idx)}
-                    aria-label="Remove bullet"
-                    disabled={disabled}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="add-bullet">
-              <input
-                type="text"
-                value={newBullet}
-                onChange={(e) => setNewBullet(e.target.value)}
-                placeholder="Add a responsibility..."
-                onKeyPress={(e) => e.key === 'Enter' && handleAddBullet()}
-                disabled={disabled}
-              />
-              <button
-                type="button"
-                className="btn-add"
-                onClick={handleAddBullet}
-                disabled={disabled}
-              >
-                + Add
-              </button>
-            </div>
-            <p className="undo-hint">Tip: Press Ctrl+Z to undo bullet edits/deletes.</p>
+            <BulletsEditor
+              bullets={editingData.bullets || []}
+              onChange={(bullets) => {
+                pushEditingUndo();
+                setEditingData((prev) => (prev ? { ...prev, bullets } : prev));
+              }}
+              disabled={disabled}
+            />
+            <p className="undo-hint">
+              Tip: click a line to edit, drag ⠿ to reorder, clear the text to delete. Ctrl+Z undoes.
+            </p>
           </div>
 
           <div className="form-group">
