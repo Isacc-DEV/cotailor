@@ -295,7 +295,7 @@ export class AnalysisService {
         await this.cards.create(sessionId, 'similar_skill', 'warning', {
           card_type: 'similar_skill',
           title: `The job wants ${jdSkill}; you have ${c.profileSkill}.`,
-          message: `These are related. How should we present ${jdSkill}?`,
+          message: `How should we present it?`,
           options: [
             {
               option_id: 'exchange',
@@ -314,7 +314,9 @@ export class AnalysisService {
             },
             { option_id: 'omit', label: 'Leave it out', consequence: `${jdSkill} is not added.` },
           ],
-          recommended_option: 'skills_only',
+          // Recommended = strongest honest option: name both the held skill and
+          // the JD skill together. User opts in per card (or via bulk-accept).
+          recommended_option: 'both',
           severity: 'warning',
           context: {
             jd_skill: jdSkill,
@@ -331,7 +333,7 @@ export class AnalysisService {
       await this.cards.create(sessionId, 'missing_required_skill', 'blocking', {
         card_type: 'missing_required_skill',
         title: `The job requires ${jdSkill}, which isn't on your profile.`,
-        message: `You don't have anything close to ${jdSkill}. What should we do?`,
+        message: '',
         options: [
           {
             option_id: 'add_experience',
@@ -345,7 +347,10 @@ export class AnalysisService {
           },
           { option_id: 'omit', label: 'Leave it out', consequence: `${jdSkill} is not added.` },
         ],
-        recommended_option: 'omit',
+        // Recommended = add a bullet for the required skill. It's a truth-gated
+        // claim (the card fires only when nothing close exists), so the user
+        // affirms it by choosing it — nothing is added unless they act.
+        recommended_option: 'add_experience',
         severity: 'blocking',
         context: { jd_skill: jdSkill },
       });
@@ -432,13 +437,15 @@ export class AnalysisService {
       await this.cards.create(sessionId, 'certification_risk', 'warning', {
         card_type: 'certification_risk',
         title: `${cert.name} is a strong fit for this job.`,
-        message: `Issued by ${cert.issuer}. It isn't on your profile — how should we handle it?`,
+        message: `Issued by ${cert.issuer}.`,
         options: [
           { option_id: 'have_it', label: 'I have it — add it', consequence: 'Added to your Certifications.' },
           { option_id: 'studying', label: "I'm studying for it", consequence: 'Shown as in progress.' },
           { option_id: 'omit', label: 'Leave it out', consequence: 'Not mentioned.' },
         ],
-        recommended_option: 'omit',
+        // Recommended = claim the cert. Truth-gated (only the user knows they
+        // hold it), so it's added only when the user picks this option.
+        recommended_option: 'have_it',
         severity: 'warning',
         context: { certification: cert.name, catalogId: cert.id, issuer: cert.issuer },
       });

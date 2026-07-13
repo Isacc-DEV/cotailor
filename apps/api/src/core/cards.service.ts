@@ -49,6 +49,9 @@ export class CardsService {
     provenance?: Provenance,
   ) {
     await this.prisma.$transaction([
+      // Drop any prior decision for this card so re-answering (editing a made
+      // decision) replaces it instead of stacking duplicate rows.
+      this.prisma.userDecision.deleteMany({ where: { cardId } }),
       this.prisma.decisionCard.update({ where: { id: cardId }, data: { status: 'answered' } }),
       this.prisma.userDecision.create({
         data: {
