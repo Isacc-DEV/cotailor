@@ -55,8 +55,21 @@ export class SessionsService {
 
   // Internal fetch — ownership is asserted at the controller-facing entry points.
   async get(id: string) {
-    const s = await this.prisma.tailoringSession.findUnique({ where: { id }, include: { cards: true } });
+    const s = await this.prisma.tailoringSession.findUnique({
+      where: { id },
+      include: { cards: { include: { decisions: { orderBy: { createdAt: 'desc' }, take: 1 } } } },
+    });
     if (!s) throw new NotFoundException({ error: 'not_found', message: 'Session not found' });
+
+    // Flatten each card's latest decision onto the card as `chosenOptionId`, so
+    // the board can show and edit an already-made choice without a 2nd request.
+    const session = {
+      ...s,
+      cards: s.cards.map(({ decisions, ...card }) => ({
+        ...card,
+        chosenOptionId: decisions[0]?.optionId ?? null,
+      })),
+    };
 
     // Analysis runs fire-and-forget, so a provider failure leaves the session
     // parked in ANALYZING with pollers spinning. Surface the recorded failure —
@@ -71,10 +84,10 @@ export class SessionsService {
       });
       if (latest?.eventType === 'ANALYSIS_FAILED') {
         const message = (latest.payload as { message?: string } | null)?.message;
-        return { ...s, analysisError: message || 'Analysis failed unexpectedly.' };
+        return { ...session, analysisError: message || 'Analysis failed unexpectedly.' };
       }
     }
-    return s;
+    return session;
   }
 
   // Analysis failures must outlive the request: log, broadcast (SSE), and
