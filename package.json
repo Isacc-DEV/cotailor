@@ -16,6 +16,7 @@
     "typecheck": "pnpm run build:shared && pnpm --filter @cotailor/api run typecheck && pnpm --filter @cotailor/web run typecheck && pnpm --filter @cotailor/admin run typecheck",
     "prisma:generate": "pnpm --filter @cotailor/api run prisma:generate",
     "prisma:migrate": "pnpm --filter @cotailor/api run prisma:migrate",
+    "db:init": "pnpm --filter @cotailor/api exec node prisma/init-db.mjs",
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
     "db:push": "pnpm --filter @cotailor/api run prisma:push",

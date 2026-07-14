@@ -82,17 +82,20 @@ build_all() {
 # idempotent and safe to re-run.
 db_bootstrap() {
   local P="apps/api/prisma"
+  # psql/libpq rejects Prisma-only query params (e.g. ?schema=public), so strip
+  # the query string. Prisma keeps the full URL; the public schema is the default.
+  local PSQL_URL="${DATABASE_URL%%\?*}"
   local has_user
-  has_user="$(psql "$DATABASE_URL" -tAc "SELECT to_regclass('public.\"User\"') IS NOT NULL;" 2>/dev/null || echo "")"
+  has_user="$(psql "$PSQL_URL" -tAc "SELECT to_regclass('public.\"User\"') IS NOT NULL;" 2>/dev/null || echo "")"
   if [ "$has_user" = "t" ]; then
     log "schema present — skipping init.sql (destructive), applying idempotent seeds only"
   else
     log "empty database — applying schema (init.sql)"
-    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$P/init.sql"
+    psql "$PSQL_URL" -v ON_ERROR_STOP=1 -q -f "$P/init.sql"
   fi
   for f in taxonomy family family-seed cert-catalog cert-catalog-multicat seed-admin; do
     log "applying $f.sql"
-    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$P/$f.sql"
+    psql "$PSQL_URL" -v ON_ERROR_STOP=1 -q -f "$P/$f.sql"
   done
   log "database ready — admin: $ADMIN_EMAILS"
 }
