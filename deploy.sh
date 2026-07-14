@@ -93,7 +93,8 @@ db_bootstrap() {
     log "empty database — applying schema (init.sql)"
     psql "$PSQL_URL" -v ON_ERROR_STOP=1 -q -f "$P/init.sql"
   fi
-  for f in taxonomy family family-seed cert-catalog cert-catalog-multicat seed-admin; do
+  # cert-catalog.sql omitted — obsolete pre-migration seed; cert-catalog-multicat.sql supersedes it.
+  for f in taxonomy family family-seed cert-catalog-multicat seed-admin; do
     log "applying $f.sql"
     psql "$PSQL_URL" -v ON_ERROR_STOP=1 -q -f "$P/$f.sql"
   done

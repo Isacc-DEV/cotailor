@@ -28,11 +28,13 @@ function resolveDatabaseUrl() {
 }
 
 const SCHEMA_FILE = 'init.sql';
+// Note: cert-catalog.sql is intentionally omitted — it's the pre-migration seed
+// (singular `category` column) and is incompatible with init.sql's current schema
+// (`categories[]`). cert-catalog-multicat.sql is the complete, current upsert.
 const SEED_FILES = [
   'taxonomy.sql',
   'family.sql',
   'family-seed.sql',
-  'cert-catalog.sql',
   'cert-catalog-multicat.sql',
   'seed-admin.sql',
 ];
